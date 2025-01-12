@@ -10,6 +10,7 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   const [initial, setInitial] = useState(false);
   const [auth, setAuth] = useState(false);
+  const [role, setRole] = useState('');  
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -22,22 +23,18 @@ export default function App() {
     <NavigationContainer>
       <Stack.Navigator>
         {!initial ? (
-          <>
-            <Stack.Screen name="Loading" component={LoadingScreen} />
-          </>
+          <Stack.Screen name="Loading" component={LoadingScreen} />
         ) : !auth ? (
-          <>
-            <Stack.Screen
-              name="Auth"
-              children={(props) => (
-                <Authentication {...props} setAuth={setAuth} />
-              )}
-            />
-          </>
+          <Stack.Screen
+            name="Auth"
+            children={(props) => (
+              <Authentication {...props} setAuth={setAuth} setRole={setRole} />
+            )}
+          />
         ) : (
-          <>
-            <Stack.Screen name="Main" component={MainStack} />
-          </>
+          <Stack.Screen name="Main">
+            {(props) => <MainStack {...props} role={role} />}
+          </Stack.Screen>
         )}
       </Stack.Navigator>
     </NavigationContainer>

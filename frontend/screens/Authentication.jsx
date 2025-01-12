@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, Button } from 'react-native';
+import { View, Text, Button, Alert } from 'react-native';
 
-const Authentication = ({ setAuth, navigation }) => {
+const Authentication = ({ setAuth, setRole, navigation }) => {
   const [mode, setMode] = useState(''); 
 
   const handleAuth = () => {
-    
-    // If no mode is selected, show an alert to select a mode
-    if (mode === null) {
+    if (mode === '') {
       Alert.alert(
         'Select Mode',
         'Please choose between Client and Doctor',
@@ -16,27 +14,29 @@ const Authentication = ({ setAuth, navigation }) => {
             text: 'Client',
             onPress: () => {
               setMode('client');
-              navigation.navigate('ClientHome'); // Navigate to client home screen
+              setRole('client');
+              setAuth(true);  
             },
           },
           {
             text: 'Doctor',
             onPress: () => {
               setMode('doctor');
-              navigation.navigate('DoctorHome'); // Navigate to doctor home screen
+              setRole('doctor');
+              setAuth(true);  
             },
           },
         ],
         { cancelable: false }
       );
     } else {
-      // If mode is already selected, navigate based on the mode
       if (mode === 'client') {
-        navigation.navigate('ClientHome');
+        setRole('client');
+        setAuth(true);  
       } else if (mode === 'doctor') {
-        navigation.navigate('DoctorHome');
+        setRole('doctor');
+        setAuth(true);  
       }
-      // setAuth(true);
     }
   };
 
