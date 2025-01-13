@@ -1,61 +1,49 @@
-import React, { useState } from 'react';
-import { View, Text, Button, Alert } from 'react-native';
+import React, { useState, useLayoutEffect } from 'react';
+import { View, Text, Alert, SafeAreaView, TouchableOpacity } from 'react-native';
+import Title from '@/common/Title';
+import Button from '@/common/Button';
+import SignUp from '@/common/SignUp'; 
+import SignIn from '@/common/SignIn'; 
 
 const Authentication = ({ setAuth, setRole, navigation }) => {
-  const [mode, setMode] = useState(''); 
+  const [mode, setMode] = useState('signIn'); 
+  const [role, setRoleState] = useState('client'); 
 
-  const handleAuth = () => {
-    if (mode === '') {
-      Alert.alert(
-        'Select Mode',
-        'Please choose between Client and Doctor',
-        [
-          {
-            text: 'Client',
-            onPress: () => {
-              setMode('client');
-              setRole('client');
-              setAuth(true);  
-            },
-          },
-          {
-            text: 'Doctor',
-            onPress: () => {
-              setMode('doctor');
-              setRole('doctor');
-              setAuth(true);  
-            },
-          },
-        ],
-        { cancelable: false }
-      );
-    } else {
-      if (mode === 'client') {
-        setRole('client');
-        setAuth(true);  
-      } else if (mode === 'doctor') {
-        setRole('doctor');
-        setAuth(true);  
-      }
-    }
-  };
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   return (
-    <View>
-      <Text>Authentication</Text>
-      <Text>Selected Mode: {mode}</Text>
+    <SafeAreaView style={{ flex: 1 }}>
+      <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 16 }}>
+        <Title text="Authentication" />
 
-      <Button
-        title='Client'
-        onPress={() => setMode('client')}
-      />
-      <Button
-        title={`Doctor`}
-        onPress={() => setMode('doctor')}
-      />
-      
-      <Button title='Complete Auth' onPress={handleAuth} />
-    </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', width: '100%' }}>
+          <Button
+            title="Client"
+            fn={() => setRoleState('client')}
+            width="40%"
+            style={{ marginHorizontal: 10, backgroundColor: 'green' }}
+          />
+          <Button
+            title="Doctor"
+            fn={() => setRoleState('doctor')}
+            width="40%"
+            style={{ marginHorizontal: 10, backgroundColor: 'green' }}
+          />
+        </View>
+
+        {mode === 'signIn' && (
+          <SignIn role={role} setAuth={setAuth} setRole={setRole} navigation={navigation} setMode={setMode} />
+        )}
+
+        {mode === 'signUp' && (
+          <SignUp role={role} setAuth={setAuth} setRole={setRole} navigation={navigation} setMode={setMode} />
+        )}
+      </View>
+    </SafeAreaView>
   );
 };
 
