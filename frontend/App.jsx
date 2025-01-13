@@ -5,12 +5,15 @@ import LoadingScreen from "./screens/Loading";
 import MainStack from "./screens/Main";
 import Authentication from "./screens/Authentication";
 
+import "./core/fontawesome";
+
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   const [initial, setInitial] = useState(false);
   const [auth, setAuth] = useState(false);
-  const [role, setRole] = useState('');  
+  const [role, setRole] = useState('');
 
   useEffect(() => {
     const timer = setTimeout(() => {
