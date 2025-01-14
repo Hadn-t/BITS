@@ -1,13 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, SafeAreaView, FlatList, Button } from 'react-native';
+import { View, Text, StyleSheet, Alert, SafeAreaView, FlatList, Button, TouchableOpacity } from 'react-native';
+import { Picker } from '@react-native-picker/picker'; // Correct import
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import axios from 'axios';
+import { MaterialIcons } from '@expo/vector-icons'; // For distance icon
+
+// Haversine Formula to calculate distance between two lat/long points
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Radius of the Earth in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c; // Distance in km
+  return distance;
+};
 
 const NearbyHospitals = () => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [sortCriteria, setSortCriteria] = useState('distance'); // Default sort by distance
 
   // Function to get the user's current location
   const getLocation = async () => {
@@ -40,12 +59,26 @@ const NearbyHospitals = () => {
       const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
       const response = await axios.get(url);
 
-      // Log the response to inspect the data structure
-      console.log(response.data);
-
-      // Ensure that the data structure is correct before setting it
       if (response.data && response.data.elements) {
-        setHospitals(response.data.elements);
+        const hospitalsData = response.data.elements.map((hospital) => {
+          const { lat, lon } = hospital;
+          if (lat && lon) {
+            const distance = calculateDistance(latitude, longitude, lat, lon);
+            return {
+              id: hospital.id,
+              name: hospital.tags?.name || 'Unnamed Hospital',
+              address: hospital.tags?.addr || 'Address not available',
+              phone: hospital.tags?.phone || 'Not available',
+              website: hospital.tags?.website || 'Not available',
+              rating: hospital.tags?.rating || 0, // Assuming we have a rating field
+              lat,
+              lon,
+              distance: distance.toFixed(2), // Distance in km
+            };
+          }
+          return null;
+        }).filter(hospital => hospital !== null); // Filter out hospitals without valid coordinates
+        setHospitals(hospitalsData);
       } else {
         Alert.alert('No hospitals found', 'No hospitals found near your location.');
       }
@@ -66,6 +99,14 @@ const NearbyHospitals = () => {
     }
   }, [currentLocation]);
 
+  useEffect(() => {
+    if (sortCriteria === 'distance') {
+      setHospitals(prevHospitals => prevHospitals.sort((a, b) => a.distance - b.distance)); // Sort by distance
+    } else if (sortCriteria === 'rating') {
+      setHospitals(prevHospitals => prevHospitals.sort((a, b) => b.rating - a.rating)); // Sort by rating
+    }
+  }, [sortCriteria]);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.mapContainer}>
@@ -81,40 +122,59 @@ const NearbyHospitals = () => {
             showsUserLocation={true}
             loadingEnabled={true}
           >
-            {hospitals.map((hospital, index) => {
-              const hospitalLatitude = hospital.lat || hospital.center?.[0];
-              const hospitalLongitude = hospital.lon || hospital.center?.[1];
-
-              // Ensure latitude and longitude are valid
-              if (!hospitalLatitude || !hospitalLongitude) {
-                return null; // Skip marker if latitude/longitude is missing
-              }
-
-              return (
-                <Marker
-                  key={index}
-                  coordinate={{ latitude: hospitalLatitude, longitude: hospitalLongitude }}
-                  title={hospital.tags?.name || 'Unnamed Hospital'}
-                  description={hospital.tags?.addr || 'Address not available'}
-                />
-              );
-            })}
+            {hospitals.map((hospital) => (
+              <Marker
+                key={hospital.id}
+                coordinate={{
+                  latitude: hospital.lat,
+                  longitude: hospital.lon,
+                }}
+                title={hospital.name}
+                description={hospital.address}
+              />
+            ))}
           </MapView>
         )}
       </View>
 
+      <View style={styles.filterContainer}>
+        <Text style={styles.filterText}>Sort by:</Text>
+        <Picker
+          selectedValue={sortCriteria}
+          style={styles.picker}
+          onValueChange={(itemValue) => setSortCriteria(itemValue)}
+        >
+          <Picker.Item label="Distance" value="distance" />
+          <Picker.Item label="Rating" value="rating" />
+        </Picker>
+      </View>
+
       <View style={styles.hospitalsList}>
         {loading ? (
-          <Text>Loading...</Text>
+          <Text style={styles.loadingText}>Loading...</Text>
         ) : (
           <FlatList
             data={hospitals}
-            keyExtractor={(item, index) => index.toString()}
+            keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
-              <View style={styles.hospitalCard}>
-                <Text style={styles.hospitalName}>{item.tags?.name || 'Unnamed Hospital'}</Text>
-                <Text style={styles.hospitalAddress}>{item.tags?.addr || 'Address not available'}</Text>
-              </View>
+              <TouchableOpacity style={styles.hospitalCard} onPress={() => Alert.alert(item.name, 'More details here')}>
+                <Text style={styles.hospitalName}>{item.name}</Text>
+                <Text style={styles.hospitalAddress}>{item.address}</Text>
+                <View style={styles.cardDetails}>
+                  <Text style={styles.hospitalDistance}>
+                    <MaterialIcons name="location-on" size={20} color="#888" /> {item.distance} km
+                  </Text>
+                  <Text style={styles.hospitalRating}>
+                    <MaterialIcons name="star" size={20} color="#888" /> {item.rating} / 5
+                  </Text>
+                  <Text style={styles.hospitalPhone}>
+                    <MaterialIcons name="call" size={20} color="#888" /> {item.phone}
+                  </Text>
+                  <Text style={styles.hospitalWebsite}>
+                    <MaterialIcons name="web" size={20} color="#888" /> {item.website}
+                  </Text>
+                </View>
+              </TouchableOpacity>
             )}
           />
         )}
@@ -129,6 +189,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 10,
+    backgroundColor: '#fff',
   },
   mapContainer: {
     flex: 1,
@@ -138,28 +199,73 @@ const styles = StyleSheet.create({
     height: '100%',
     width: '100%',
   },
+  filterContainer: {
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  filterText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  picker: {
+    height: 50,
+    width: 150,
+  },
   hospitalsList: {
     flex: 1,
     marginTop: 10,
   },
+  loadingText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 20,
+  },
   hospitalCard: {
-    padding: 10,
+    padding: 15,
     backgroundColor: '#f8f8f8',
-    marginBottom: 10,
-    borderRadius: 8,
+    marginBottom: 15,
+    borderRadius: 10,
+    elevation: 5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
+    shadowOpacity: 0.3,
     shadowRadius: 2,
-    elevation: 5,
   },
   hospitalName: {
     fontWeight: 'bold',
     fontSize: 18,
+    marginBottom: 5,
   },
   hospitalAddress: {
     fontSize: 14,
     color: '#555',
+    marginBottom: 10,
+  },
+  cardDetails: {
+    flexDirection: 'column',
+    marginTop: 5,
+  },
+  hospitalDistance: {
+    fontSize: 14,
+    color: '#888',
+    marginBottom: 5,
+  },
+  hospitalRating: {
+    fontSize: 14,
+    color: '#888',
+    marginBottom: 5,
+  },
+  hospitalPhone: {
+    fontSize: 14,
+    color: '#888',
+    marginBottom: 5,
+  },
+  hospitalWebsite: {
+    fontSize: 14,
+    color: '#888',
+    marginBottom: 5,
   },
 });
 
