@@ -12,8 +12,8 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   const [initial, setInitial] = useState(false);
-  const [auth, setAuth] = useState(false);
-  const [role, setRole] = useState('');
+  const [auth, setAuth] = useState(true);
+  const [role, setRole] = useState('client');
 
   useEffect(() => {
     const timer = setTimeout(() => {
