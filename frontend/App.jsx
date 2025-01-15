@@ -36,8 +36,11 @@ export default function App() {
           />
         ) : (
           <Stack.Screen name="Main">
-            {(props) => <MainStack {...props} role={role} />}
-          </Stack.Screen>
+          {({ navigation, route }) => (
+            <MainStack {...{ navigation, route }} role={role} setAuth={setAuth} />
+          )}
+        </Stack.Screen>
+        
         )}
       </Stack.Navigator>
     </NavigationContainer>

@@ -14,7 +14,7 @@ import ProfileScreen from "./Profile";
 
 const Tab = createBottomTabNavigator();
 
-const MainStack = ({ navigation, role }) => {
+const MainStack = ({ navigation, role, setAuth }) => {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
@@ -31,36 +31,36 @@ const MainStack = ({ navigation, role }) => {
     >
       {role === 'client' ? (
         <>
-          <Tab.Screen 
-            name="Home" 
-            component={HomeScreen} 
+          <Tab.Screen
+            name="Home"
+            component={HomeScreen}
             options={{
               tabBarIcon: ({ focused, color, size }) => (
                 <FontAwesomeIcon icon={faHome} size={size} color={color} />
               ),
             }}
           />
-          <Tab.Screen 
-            name="Nearby Hospitals" 
-            component={NearbyHospitalsScreen} 
+          <Tab.Screen
+            name="Nearby Hospitals"
+            component={NearbyHospitalsScreen}
             options={{
               tabBarIcon: ({ focused, color, size }) => (
                 <FontAwesomeIcon icon={faHospital} size={size} color={color} />
               ),
             }}
           />
-          <Tab.Screen 
-            name="Health Records" 
-            component={HealthRecordsScreen} 
+          <Tab.Screen
+            name="Health Records"
+            component={HealthRecordsScreen}
             options={{
               tabBarIcon: ({ focused, color, size }) => (
                 <FontAwesomeIcon icon={faFileAlt} size={size} color={color} />
               ),
             }}
           />
-          <Tab.Screen 
-            name="Appointments" 
-            component={AppointmentScreen} 
+          <Tab.Screen
+            name="Appointments"
+            component={AppointmentScreen}
             options={{
               tabBarIcon: ({ focused, color, size }) => (
                 <FontAwesomeIcon icon={faCalendar} size={size} color={color} />
@@ -70,36 +70,36 @@ const MainStack = ({ navigation, role }) => {
         </>
       ) : role === 'doctor' ? (
         <>
-          <Tab.Screen 
-            name="Dashboard" 
-            component={DashboardScreen} 
+          <Tab.Screen
+            name="Dashboard"
+            component={DashboardScreen}
             options={{
               tabBarIcon: ({ focused, color, size }) => (
                 <FontAwesomeIcon icon={faDashboard} size={size} color={color} />
               ),
             }}
           />
-          <Tab.Screen 
-            name="Appointments" 
-            component={AppointmentScreen} 
+          <Tab.Screen
+            name="Appointments"
+            component={AppointmentScreen}
             options={{
               tabBarIcon: ({ focused, color, size }) => (
                 <FontAwesomeIcon icon={faCalendar} size={size} color={color} />
               ),
             }}
           />
-          <Tab.Screen 
-            name="Patients" 
-            component={PatientsScreen} 
+          <Tab.Screen
+            name="Patients"
+            component={PatientsScreen}
             options={{
               tabBarIcon: ({ focused, color, size }) => (
                 <FontAwesomeIcon icon={faUsers} size={size} color={color} />
               ),
             }}
           />
-          <Tab.Screen 
-            name="Messages" 
-            component={MessagesScreen} 
+          <Tab.Screen
+            name="Messages"
+            component={MessagesScreen}
             options={{
               tabBarIcon: ({ focused, color, size }) => (
                 <FontAwesomeIcon icon={faCommentDots} size={size} color={color} />
@@ -109,15 +109,17 @@ const MainStack = ({ navigation, role }) => {
         </>
       ) : null}
 
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileScreen} 
+      <Tab.Screen
+        name="Profile"
+        children={(props) => <ProfileScreen {...props} setAuth={setAuth} />}
+        initialParams={{ role }} // Or 'doctor' depending on the user's role
         options={{
           tabBarIcon: ({ focused, color, size }) => (
             <FontAwesomeIcon icon={faUser} size={size} color={color} />
           ),
         }}
       />
+
     </Tab.Navigator>
   );
 };
