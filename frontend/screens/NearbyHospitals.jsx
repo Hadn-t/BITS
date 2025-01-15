@@ -660,19 +660,15 @@ const styles = StyleSheet.create({
   address: { fontSize: 14, color: '#777' },
   actionButtons: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    marginRight: 10,
-    marginBottom: 10,
+    borderRadius: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 5,
   },
-  buttonText: {
-    color: '#fff',
-    marginLeft: 5,
-    fontSize: 14,
-  },
+  buttonText: { color: '#fff', marginLeft: 5, fontSize: 14 },
   emptyText: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#666' },
 });
 
