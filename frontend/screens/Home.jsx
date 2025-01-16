@@ -1,19 +1,39 @@
 import React, { useLayoutEffect } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, Text, View, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, Text, View, SafeAreaView,Linking, Platform, StatusBar } from 'react-native';
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faHome, faHospital, faFileAlt, faStethoscope, faCalendar, faUsers, 
-  faCommentDots, faDashboard, faUser, faAmbulance, faHeart, faUserMd } from "@fortawesome/free-solid-svg-icons";
+import {
+  faHome, faHospital, faFileAlt, faStethoscope, faCalendar, faUsers,
+  faCommentDots, faDashboard, faUser, faAmbulance, faHeart, faUserMd,
+  faPhone
+} from "@fortawesome/free-solid-svg-icons";
 
 const HomeScreen = ({ navigation, route }) => {
-  useLayoutEffect(()=>{
+  useLayoutEffect(() => {
     navigation.setOptions({
-      headerShown:false,
+      headerShown: false,
     })
-  },[navigation]);
+  }, [navigation]);
 
   // Navigate to Nearby Hospitals screen (SOS)
   const handleSOSNavigate = () => {
     navigation.navigate('Nearby Hospitals', { screen: 'NearbyHospitalsTab' });
+  };
+  const handleSOSCall = () => {
+    const phoneNumber = 'tel:112'; // Replace with the actual emergency number
+    
+    // Check if the device can handle the phone call URL
+    Linking.canOpenURL(phoneNumber)
+      .then((supported) => {
+        if (supported) {
+          Linking.openURL(phoneNumber); // This will open the dialer with the phone number pre-filled
+        } else {
+          Alert.alert('Error', 'Unable to make a phone call at this time.');
+        }
+      })
+      .catch((error) => {
+        console.error('Error opening URL:', error);
+        Alert.alert('Error', 'Something went wrong. Please try again.');
+      });
   };
 
   const handleProfileNavigate = () => {
@@ -25,8 +45,8 @@ const HomeScreen = ({ navigation, route }) => {
   };
 
   const QuickActionCard = ({ icon, title, onPress, color = '#007BFF' }) => (
-    <TouchableOpacity 
-      style={[styles.card, { backgroundColor: color }]} 
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: color }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
@@ -47,7 +67,7 @@ const HomeScreen = ({ navigation, route }) => {
 
         <View style={styles.mainContent}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          
+
           <View style={styles.cardContainer}>
             <QuickActionCard
               icon={faCalendar}
@@ -55,32 +75,32 @@ const HomeScreen = ({ navigation, route }) => {
               onPress={handleAppointmentNavigate}
               color="#4A90E2"
             />
-            
+
             <QuickActionCard
               icon={faUser}
               title="My Profile"
               onPress={handleProfileNavigate}
               color="#50C878"
             />
-            
+
             <QuickActionCard
               icon={faHeart}
               title="Health Stats"
-              onPress={() => {}}
+              onPress={() => { }}
               color="#FF7F50"
             />
-            
+
             <QuickActionCard
               icon={faUserMd}
               title="Find Doctor"
-              onPress={() => {}}
+              onPress={() => { }}
               color="#9B59B6"
             />
-            
+
             <QuickActionCard
               icon={faStethoscope}
               title="Health Tips"
-              onPress={() => {}}
+              onPress={() => { }}
               color="#E67E22"
             />
           </View>
@@ -111,14 +131,16 @@ const HomeScreen = ({ navigation, route }) => {
       </ScrollView>
 
       {/* SOS Button */}
-      <TouchableOpacity 
-        style={styles.sosButton} 
-        onPress={handleSOSNavigate}
+
+      <TouchableOpacity
+        style={[styles.sosButton,{marginTop: 10}]}
+        
+        onPress={handleSOSCall}
         activeOpacity={0.8}
       >
         <View style={styles.sosContent}>
-          <FontAwesomeIcon icon={faAmbulance} size={24} color="#fff" />
-          <Text style={styles.sosButtonText}>Emergency SOS</Text>
+          <FontAwesomeIcon icon={faPhone} size={20} color="#fff" />
+          <Text style={styles.sosButtonText}>Call Ambulance</Text>
         </View>
       </TouchableOpacity>
     </SafeAreaView>
@@ -129,7 +151,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,

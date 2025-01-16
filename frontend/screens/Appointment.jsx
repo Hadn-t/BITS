@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialIcons } from '@expo/vector-icons';
 
-const Appointment = () => {
+const Appointment = ({navigation}) => {
   const [date, setDate] = useState(new Date());
   const [time, setTime] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -21,6 +21,12 @@ const Appointment = () => {
   const [appointments, setAppointments] = useState([]);
   const [description, setDescription] = useState('');
   const [isEditing, setIsEditing] = useState(null);
+
+  useLayoutEffect(()=>{
+    navigation.setOptions({
+      headerShown:false,
+    })
+  },[])
 
   const onChangeDate = (event, selectedDate) => {
     const currentDate = selectedDate || date;
