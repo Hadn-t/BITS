@@ -24,9 +24,9 @@ const MainStack = ({ navigation, role, setAuth }) => {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: "#202020", // Active icon color
-        tabBarInactiveTintColor: "#888", // Inactive icon color
-        tabBarShowLabel: false, // Hide tab labels
+        tabBarActiveTintColor: "#202020",
+        tabBarInactiveTintColor: "#888",
+        tabBarShowLabel: false,
       }}
     >
       {role === 'client' ? (
@@ -56,6 +56,7 @@ const MainStack = ({ navigation, role, setAuth }) => {
               tabBarIcon: ({ focused, color, size }) => (
                 <FontAwesomeIcon icon={faFileAlt} size={size} color={color} />
               ),
+              headerShown: false
             }}
           />
           <Tab.Screen

@@ -7,7 +7,7 @@ class FileUpload(models.Model):
         ('lab_result', 'Lab Result'),
     ]
 
-    user_id = models.charField(max_length=150)
+    user_id = models.CharField(max_length=150)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     file = models.FileField(upload_to='uploads/%Y/%m/%d')
     uploaded_at = models.DateTimeField(auto_now_add=True)
