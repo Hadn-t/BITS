@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { 
-  faStethoscope, 
-  faUserMd, 
-  faHospital, 
-  faClock, 
+import {
+  faStethoscope,
+  faUserMd,
+  faHospital,
+  faClock,
   faCalendarCheck,
   faUserCircle,
   faEnvelope,
@@ -13,7 +13,14 @@ import {
   faPen
 } from "@fortawesome/free-solid-svg-icons";
 
-const ProfileScreen = ({ route, setAuth }) => {
+const ProfileScreen = ({ route, setAuth, navigation }) => {
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    })
+  }, [navigation])
+
   const { role } = route.params;
 
   const handleEditProfile = () => {
@@ -40,7 +47,7 @@ const ProfileScreen = ({ route, setAuth }) => {
       <View style={styles.infoSection}>
         <Text style={styles.name}>Dr. John Doe</Text>
         <Text style={styles.specialty}>Cardiologist</Text>
-        
+
         <View style={styles.contactInfo}>
           <View style={styles.infoRow}>
             <FontAwesomeIcon icon={faEnvelope} size={16} color="#555" />
@@ -145,17 +152,17 @@ const ProfileScreen = ({ route, setAuth }) => {
   return (
     <View style={styles.container}>
       {role === 'doctor' ? <DoctorProfile /> : <ClientProfile />}
-      
+
       <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={[styles.button, styles.editButton]} 
+        <TouchableOpacity
+          style={[styles.button, styles.editButton]}
           onPress={handleEditProfile}
         >
           <FontAwesomeIcon icon={faPen} size={16} color="#fff" />
           <Text style={styles.buttonText}>Edit Profile</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.button, styles.logoutButton]} 
+        <TouchableOpacity
+          style={[styles.button, styles.logoutButton]}
           onPress={handleLogout}
         >
           <Text style={styles.buttonText}>Logout</Text>
@@ -172,7 +179,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    padding: 16,
+    padding: 12,  // Reduced padding
   },
   headerSection: {
     alignItems: 'center',
@@ -182,7 +189,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    marginBottom: 10,
+    marginBottom: 5,  // Reduced from 10
   },
   badgeContainer: {
     flexDirection: 'row',
@@ -190,6 +197,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
     padding: 8,
     borderRadius: 20,
+    marginBottom: 5,  // Reduced from 10
   },
   verifiedBadge: {
     marginLeft: 8,
@@ -203,7 +211,7 @@ const styles = StyleSheet.create({
   },
   infoSection: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 15,  // Reduced from 20
   },
   name: {
     fontSize: 24,
@@ -219,7 +227,7 @@ const styles = StyleSheet.create({
   contactInfo: {
     width: '100%',
     backgroundColor: '#fff',
-    padding: 15,
+    padding: 12,  // Reduced padding
     borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -240,11 +248,11 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 20,
+    marginBottom: 15,  // Reduced from 20
   },
   statBox: {
     backgroundColor: '#fff',
-    padding: 15,
+    padding: 12,  // Reduced padding
     borderRadius: 10,
     alignItems: 'center',
     width: '30%',
@@ -266,9 +274,9 @@ const styles = StyleSheet.create({
   },
   scheduleSection: {
     backgroundColor: '#fff',
-    padding: 15,
+    padding: 12,  // Reduced padding
     borderRadius: 10,
-    marginBottom: 20,
+    marginBottom: 15,  // Reduced from 20
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -279,7 +287,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 10,
+    marginBottom: 5,  // Reduced from 10
   },
   scheduleInfo: {
     marginTop: 10,
@@ -291,9 +299,9 @@ const styles = StyleSheet.create({
   },
   healthInfoSection: {
     backgroundColor: '#fff',
-    padding: 15,
+    padding: 12,  // Reduced padding
     borderRadius: 10,
-    marginBottom: 20,
+    marginBottom: 15,  // Reduced from 20
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -319,9 +327,9 @@ const styles = StyleSheet.create({
   },
   upcomingSection: {
     backgroundColor: '#fff',
-    padding: 15,
+    padding: 12,  // Reduced padding
     borderRadius: 10,
-    marginBottom: 20,
+    marginBottom: 15,  // Reduced from 20
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
