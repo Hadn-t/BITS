@@ -1,5 +1,4 @@
-// NotificationDetail.jsx
-import React,{useLayoutEffect} from 'react';
+import React, { useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -12,22 +11,22 @@ import {
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 
-const NotificationDetail = ({ route, navigation }) => {
-
-      useLayoutEffect(() => {
-          navigation.setOptions({
-              headerShown: false, 
-          });
-      }, [navigation]);
+const NotificationDetail = ({ navigation, route }) => {
+  // Destructure notification from route.params
   const { notification } = route.params;
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
+
   const renderDetailItem = (label, value, key) => (
-    <View style={styles.detailItem} key={key}>  {/* Use key for unique identification */}
+    <View style={styles.detailItem} key={key}>
       <Text style={styles.detailLabel}>{label}</Text>
       <Text style={styles.detailValue}>{value}</Text>
     </View>
   );
-  
 
   const getPriorityStyle = (priority) => {
     const baseStyle = {
@@ -48,6 +47,14 @@ const NotificationDetail = ({ route, navigation }) => {
         return { ...baseStyle, backgroundColor: '#f3f4f6', borderColor: '#6b7280', borderWidth: 1 };
     }
   };
+
+  if (!notification || !notification.text) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <Text style={styles.errorMessage}>Notification details are unavailable.</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -80,16 +87,16 @@ const NotificationDetail = ({ route, navigation }) => {
           </View>
 
           <View style={styles.detailsContainer}>
-  {Object.entries(notification.details).map(([key, value], index) => {
-    if (key !== 'priority') {
-      const label = key
-        .split(/(?=[A-Z])/)
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-      return renderDetailItem(label, value, index); // Pass index as key
-    }
-  })}
-</View>
+            {Object.entries(notification.details).map(([key, value], index) => {
+              if (key !== 'priority') {
+                const label = key
+                  .split(/(?=[A-Z])/)
+                  .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' ');
+                return renderDetailItem(label, value, index); // Pass index as key
+              }
+            })}
+          </View>
 
         </View>
       </ScrollView>
@@ -250,6 +257,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  errorMessage: {
+    fontSize: 18,
+    color: '#f44336',
+    textAlign: 'center',
+    marginTop: 50,
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,14 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const MedicalReportsScreen = () => {
+const HealthRecords = ({navigation}) => {
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerShown: false, 
+        });
+    }, [navigation]);
+
   const reports = [
     {
       id: 1,
@@ -243,4 +250,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MedicalReportsScreen;
+export default HealthRecords;

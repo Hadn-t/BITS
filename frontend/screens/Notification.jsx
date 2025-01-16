@@ -21,53 +21,234 @@ const Notifications = ({ navigation }) => {
         });
     }, [navigation]);
     
-  const [notifications] = useState([
-    {
-      id: '1',
-      text: 'New lab results for Sarah Johnson',
-      time: '2h ago',
-      type: 'lab',
-      details: {
-        patientName: 'Sarah Johnson',
-        patientId: 'P-1234',
-        category: 'Lab Results',
-        testType: 'Blood Work',
-        status: 'Ready for Review',
-        receivedAt: '2024-01-15 10:30 AM',
-        priority: 'Normal',
+    const [notifications] = useState([
+      {
+        id: '1',
+        text: 'New lab results for Sarah Johnson',
+        time: '2h ago',
+        type: 'lab',
+        details: {
+          patientName: 'Sarah Johnson',
+          patientId: 'P-1234',
+          category: 'Lab Results',
+          testType: 'Blood Work',
+          status: 'Ready for Review',
+          receivedAt: '2024-01-15 10:30 AM',
+          priority: 'Normal',
+        }
+      },
+      {
+        id: '2',
+        text: 'Appointment request from James Brown',
+        time: '3h ago',
+        type: 'appointment',
+        details: {
+          patientName: 'James Brown',
+          patientId: 'P-5678',
+          requestType: 'Follow-up',
+          preferredDate: '2024-01-20',
+          preferredTime: 'Morning',
+          reason: 'Discuss test results',
+          priority: 'Medium',
+        }
+      },
+      {
+        id: '3',
+        text: 'Prescription renewal for Emma Wilson',
+        time: '5h ago',
+        type: 'prescription',
+        details: {
+          patientName: 'Emma Wilson',
+          patientId: 'P-9012',
+          medication: 'Amoxicillin',
+          currentDosage: '500mg',
+          frequency: 'Twice daily',
+          lastPrescribed: '2023-12-15',
+          priority: 'High',
+        }
+      },
+      {
+        id: '4',
+        text: 'New appointment scheduled for Michael Scott',
+        time: '1d ago',
+        type: 'appointment',
+        details: {
+          patientName: 'Michael Scott',
+          patientId: 'P-3456',
+          requestType: 'Consultation',
+          preferredDate: '2024-02-01',
+          preferredTime: 'Afternoon',
+          reason: 'Routine check-up',
+          priority: 'Normal',
+        }
+      },
+      {
+        id: '5',
+        text: 'Lab results available for Angela Martin',
+        time: '2d ago',
+        type: 'lab',
+        details: {
+          patientName: 'Angela Martin',
+          patientId: 'P-7890',
+          category: 'Lab Results',
+          testType: 'X-ray',
+          status: 'Ready for Review',
+          receivedAt: '2024-01-13 09:00 AM',
+          priority: 'Low',
+        }
+      },
+      {
+        id: '6',
+        text: 'New prescription for Dwight Schrute',
+        time: '3d ago',
+        type: 'prescription',
+        details: {
+          patientName: 'Dwight Schrute',
+          patientId: 'P-1122',
+          medication: 'Lisinopril',
+          currentDosage: '10mg',
+          frequency: 'Once daily',
+          lastPrescribed: '2024-01-12',
+          priority: 'Medium',
+        }
+      },
+      {
+        id: '7',
+        text: 'Appointment cancellation for Pam Beesly',
+        time: '3d ago',
+        type: 'appointment',
+        details: {
+          patientName: 'Pam Beesly',
+          patientId: 'P-3344',
+          requestType: 'Consultation',
+          preferredDate: '2024-01-18',
+          preferredTime: 'Morning',
+          reason: 'Canceled appointment',
+          priority: 'Low',
+        }
+      },
+      {
+        id: '8',
+        text: 'Test results available for Ryan Howard',
+        time: '4d ago',
+        type: 'lab',
+        details: {
+          patientName: 'Ryan Howard',
+          patientId: 'P-5566',
+          category: 'Lab Results',
+          testType: 'MRI Scan',
+          status: 'In Review',
+          receivedAt: '2024-01-10 03:30 PM',
+          priority: 'High',
+        }
+      },
+      {
+        id: '9',
+        text: 'Prescription renewal reminder for Toby Flenderson',
+        time: '5d ago',
+        type: 'prescription',
+        details: {
+          patientName: 'Toby Flenderson',
+          patientId: 'P-7788',
+          medication: 'Hydrochlorothiazide',
+          currentDosage: '25mg',
+          frequency: 'Once daily',
+          lastPrescribed: '2023-12-10',
+          priority: 'Normal',
+        }
+      },
+      {
+        id: '10',
+        text: 'New lab results for Jan Levinson',
+        time: '6d ago',
+        type: 'lab',
+        details: {
+          patientName: 'Jan Levinson',
+          patientId: 'P-8899',
+          category: 'Lab Results',
+          testType: 'Urine Test',
+          status: 'Pending Review',
+          receivedAt: '2024-01-08 07:45 AM',
+          priority: 'Medium',
+        }
+      },
+      {
+        id: '11',
+        text: 'New appointment request for Creed Bratton',
+        time: '6d ago',
+        type: 'appointment',
+        details: {
+          patientName: 'Creed Bratton',
+          patientId: 'P-9900',
+          requestType: 'Routine Check',
+          preferredDate: '2024-01-25',
+          preferredTime: 'Afternoon',
+          reason: 'Routine check-up',
+          priority: 'Normal',
+        }
+      },
+      {
+        id: '12',
+        text: 'Prescription alert for Stanley Hudson',
+        time: '7d ago',
+        type: 'prescription',
+        details: {
+          patientName: 'Stanley Hudson',
+          patientId: 'P-1111',
+          medication: 'Metformin',
+          currentDosage: '500mg',
+          frequency: 'Twice daily',
+          lastPrescribed: '2023-12-05',
+          priority: 'High',
+        }
+      },
+      {
+        id: '13',
+        text: 'Upcoming appointment reminder for Kelly Kapoor',
+        time: '8d ago',
+        type: 'appointment',
+        details: {
+          patientName: 'Kelly Kapoor',
+          patientId: 'P-2222',
+          requestType: 'Consultation',
+          preferredDate: '2024-02-10',
+          preferredTime: 'Morning',
+          reason: 'Consultation regarding health',
+          priority: 'Low',
+        }
+      },
+      {
+        id: '14',
+        text: 'New test results for Oscar Martinez',
+        time: '10d ago',
+        type: 'lab',
+        details: {
+          patientName: 'Oscar Martinez',
+          patientId: 'P-3333',
+          category: 'Lab Results',
+          testType: 'Cholesterol Test',
+          status: 'Ready for Review',
+          receivedAt: '2024-01-05 11:00 AM',
+          priority: 'Normal',
+        }
+      },
+      {
+        id: '15',
+        text: 'New prescription available for Phyllis Vance',
+        time: '12d ago',
+        type: 'prescription',
+        details: {
+          patientName: 'Phyllis Vance',
+          patientId: 'P-4444',
+          medication: 'Amlodipine',
+          currentDosage: '5mg',
+          frequency: 'Once daily',
+          lastPrescribed: '2023-12-01',
+          priority: 'Medium',
+        }
       }
-    },
-    {
-      id: '2',
-      text: 'Appointment request from James Brown',
-      time: '3h ago',
-      type: 'appointment',
-      details: {
-        patientName: 'James Brown',
-        patientId: 'P-5678',
-        requestType: 'Follow-up',
-        preferredDate: '2024-01-20',
-        preferredTime: 'Morning',
-        reason: 'Discuss test results',
-        priority: 'Medium',
-      }
-    },
-    {
-      id: '3',
-      text: 'Prescription renewal for Emma Wilson',
-      time: '5h ago',
-      type: 'prescription',
-      details: {
-        patientName: 'Emma Wilson',
-        patientId: 'P-9012',
-        medication: 'Amoxicillin',
-        currentDosage: '500mg',
-        frequency: 'Twice daily',
-        lastPrescribed: '2023-12-15',
-        priority: 'High',
-      }
-    },
-  ]);
+    ]);
+    
 
   const getNotificationIcon = (type) => {
     switch (type) {
@@ -138,11 +319,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+
   },
   container: {
     flex: 1,
   },
   header: {
+    
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
