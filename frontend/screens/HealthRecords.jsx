@@ -1,253 +1,346 @@
-import React, { useLayoutEffect } from 'react';
+import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
-  ScrollView,
+  Alert,
+  Alert,
   StyleSheet,
+  ActivityIndicator,
+  ActivityIndicator,
   TouchableOpacity,
-  SafeAreaView,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+  Platform,
+} from "react-native";
+import * as DocumentPicker from "expo-document-picker";
 
-const HealthRecords = ({navigation}) => {
+const DOCUMENT_TYPES = {
+  prescription: "Prescription",
+  lab_result: "Lab Result",
+};
+  Platform,
+} from "react-native";
+import * as DocumentPicker from "expo-document-picker";
 
-    useLayoutEffect(() => {
-        navigation.setOptions({
-            headerShown: false, 
-        });
-    }, [navigation]);
+const DOCUMENT_TYPES = {
+  prescription: "Prescription",
+  lab_result: "Lab Result",
+};
 
-  const reports = [
-    {
-      id: 1,
-      type: "Blood Test Report",
-      date: "15 Jan 2024",
-      doctor: "Dr. Smith",
-      status: "Normal",
-      category: "Laboratory",
-      fileSize: "2.4 MB",
-    },
-    {
-      id: 2,
-      type: "X-Ray Report",
-      date: "10 Jan 2024",
-      doctor: "Dr. Johnson",
-      status: "Review Required",
-      category: "Radiology",
-      fileSize: "5.1 MB",
-    },
-    {
-      id: 3,
-      type: "MRI Scan Report",
-      date: "5 Jan 2024",
-      doctor: "Dr. Williams",
-      status: "Normal",
-      category: "Radiology",
-      fileSize: "8.7 MB",
-    },
-    {
-      id: 4,
-      type: "Pathology Report",
-      date: "1 Jan 2024",
-      doctor: "Dr. Davis",
-      status: "Urgent Review",
-      category: "Laboratory",
-      fileSize: "1.8 MB",
-    },
-  ];
+const UploadFiles = () => {
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedDocType, setSelectedDocType] = useState(null);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Normal':
-        return '#4CAF50';
-      case 'Review Required':
-        return '#FF9800';
-      case 'Urgent Review':
-        return '#F44336';
-      default:
-        return '#757575';
+  const pickDocument = async (documentType) => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "*/*",
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled) {
+        const asset = result.assets[0];
+        console.log("Picked asset:", asset);
+
+        setSelectedFile(asset);
+        setSelectedDocType(documentType);
+        Alert.alert("Success", `Selected: ${asset.name}`);
+      }
+    } catch (error) {
+      console.error("Error picking document:", error);
+      Alert.alert("Error", "Failed to select file. Please try again.");
     }
   };
 
-  const getCategoryIcon = (category) => {
-    switch (category) {
-      case 'Laboratory':
-        return 'test-tube';
-      case 'Radiology':
-        return 'radioactive';
-      default:
-        return 'file-document';
+  const uploadFile = async () => {
+    if (!selectedFile) {
+      Alert.alert("Error", "Please select a file first.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const formData = new FormData();
+      const fileToUpload = {
+        uri: selectedFile.uri,
+        type: selectedFile.mimeType || "image/jpeg",
+        name: selectedFile.name,
+      };
+
+      formData.append("file", fileToUpload);
+      formData.append("user_id", "user123");
+      formData.append("category", selectedDocType);
+
+      const csrfToken = "YOUR_CSRF_TOKEN"; // Replace with the actual CSRF token
+
+      const response = await fetch("http://192.168.1.2:5000/core/upload/", {
+        method: "POST",
+        body: formData,
+        headers: {
+          Accept: "application/json",
+          "X-CSRFToken": csrfToken, // Include CSRF token here
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`);
+      }
+
+      const responseText = await response.text();
+      Alert.alert("Success", "File uploaded successfully!");
+      setSelectedFile(null);
+      setSelectedDocType(null);
+    } catch (error) {
+      console.error("Full error details:", {
+        message: error.message,
+        stack: error.stack,
+      });
+      Alert.alert("Error", `Upload failed: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  const ReportCard = ({ report }) => (
-    <TouchableOpacity style={styles.reportCard}>
-      <View style={styles.reportHeader}>
-        <View style={styles.categoryIcon}>
-          <Icon 
-            name={getCategoryIcon(report.category)} 
-            size={24} 
-            color="#FFF"
-          />
-        </View>
-        <View style={styles.headerRight}>
-          <Text style={styles.reportType}>{report.type}</Text>
-          <Text style={styles.reportDate}>{report.date}</Text>
-        </View>
-      </View>
-      
-      <View style={styles.reportDetails}>
-        <View style={styles.detailRow}>
-          <Icon name="doctor" size={16} color="#666" />
-          <Text style={styles.detailText}>{report.doctor}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Icon name="folder" size={16} color="#666" />
-          <Text style={styles.detailText}>{report.category}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Icon name="file" size={16} color="#666" />
-          <Text style={styles.detailText}>{report.fileSize}</Text>
-        </View>
-      </View>
-
-      <View style={styles.reportFooter}>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(report.status) }]}>
-          <Text style={styles.statusText}>{report.status}</Text>
-        </View>
-        <TouchableOpacity style={styles.downloadButton}>
-          <Icon name="download" size={20} color="#4CAF50" />
-          <Text style={styles.downloadText}>Download</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Medical Reports</Text>
-        <TouchableOpacity style={styles.filterButton}>
-          <Icon name="filter-variant" size={24} color="#333" />
-        </TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+      <Text style={styles.header}>Upload File</Text>
 
-      <ScrollView style={styles.scrollView}>
-        {reports.map((report) => (
-          <ReportCard key={report.id} report={report} />
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+      <View style={styles.mainContent}>
+        <View style={styles.buttonContainer}>
+          {Object.entries(DOCUMENT_TYPES).map(([key, value]) => (
+            <TouchableOpacity
+              key={key}
+              style={[
+                styles.button,
+                styles.typeButton,
+                selectedDocType === key && styles.selectedButton,
+              ]}
+              onPress={() => pickDocument(key)}
+            >
+              <Text style={styles.buttonText}>{value}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {selectedFile && (
+          <View style={styles.fileInfo}>
+            <Text style={styles.fileType}>
+              Type: {DOCUMENT_TYPES[selectedDocType]}
+            </Text>
+            <Text style={styles.fileName} numberOfLines={1}>
+              File: {selectedFile.name}
+            </Text>
+            <Text style={styles.fileDetails}>
+              Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+            </Text>
+          </View>
+        )}
+
+        {selectedFile &&
+          (isLoading ? (
+            <ActivityIndicator
+              style={styles.loader}
+              color="#2196F3"
+              size="large"
+            />
+          ) : (
+            <TouchableOpacity
+              style={[styles.button, styles.uploadButton]}
+              onPress={uploadFile}
+            >
+              <Text style={styles.buttonText}>Upload</Text>
+            </TouchableOpacity>
+          ))}
+  return (
+    <View style={styles.container}>
+      <Text style={styles.header}>Upload File</Text>
+
+      <View style={styles.mainContent}>
+        <View style={styles.buttonContainer}>
+          {Object.entries(DOCUMENT_TYPES).map(([key, value]) => (
+            <TouchableOpacity
+              key={key}
+              style={[
+                styles.button,
+                styles.typeButton,
+                selectedDocType === key && styles.selectedButton,
+              ]}
+              onPress={() => pickDocument(key)}
+            >
+              <Text style={styles.buttonText}>{value}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {selectedFile && (
+          <View style={styles.fileInfo}>
+            <Text style={styles.fileType}>
+              Type: {DOCUMENT_TYPES[selectedDocType]}
+            </Text>
+            <Text style={styles.fileName} numberOfLines={1}>
+              File: {selectedFile.name}
+            </Text>
+            <Text style={styles.fileDetails}>
+              Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+            </Text>
+          </View>
+        )}
+
+        {selectedFile &&
+          (isLoading ? (
+            <ActivityIndicator
+              style={styles.loader}
+              color="#2196F3"
+              size="large"
+            />
+          ) : (
+            <TouchableOpacity
+              style={[styles.button, styles.uploadButton]}
+              onPress={uploadFile}
+            >
+              <Text style={styles.buttonText}>Upload</Text>
+            </TouchableOpacity>
+          ))}
+      </View>
+    </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F6FA',
+    padding: 20,
+    backgroundColor: "#fff",
+    padding: 20,
+    backgroundColor: "#fff",
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 25,
+    color: "#333",
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+  mainContent: {
+    gap: 20,
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 25,
+    color: "#333",
   },
-  filterButton: {
-    padding: 8,
+  mainContent: {
+    gap: 20,
   },
-  scrollView: {
-    padding: 16,
+  buttonContainer: {
+    flexDirection: "row",
+    gap: 15,
+    marginBottom: 20,
+  buttonContainer: {
+    flexDirection: "row",
+    gap: 15,
+    marginBottom: 20,
   },
-  reportCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    marginBottom: 16,
-    padding: 16,
+  button: {
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  button: {
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
     elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
-  reportHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  categoryIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#4CAF50',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  headerRight: {
+  typeButton: {
+  typeButton: {
     flex: 1,
+    backgroundColor: "#2196F3",
+    backgroundColor: "#2196F3",
   },
-  reportType: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
+  selectedButton: {
+    backgroundColor: "#1976D2",
   },
-  reportDate: {
+  uploadButton: {
+    backgroundColor: "#4CAF50",
+    marginTop: 10,
+  selectedButton: {
+    backgroundColor: "#1976D2",
+  },
+  uploadButton: {
+    backgroundColor: "#4CAF50",
+    marginTop: 10,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  fileInfo: {
+    backgroundColor: "#f5f5f5",
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 10,
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  fileInfo: {
+    backgroundColor: "#f5f5f5",
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 10,
+  },
+  fileType: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 5,
+    color: "#444",
+  },
+  fileName: {
+    color: "#666",
+  fileType: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 5,
+    color: "#444",
+  },
+  fileName: {
+    color: "#666",
     fontSize: 14,
-    color: '#666',
+    marginBottom: 5,
+    marginBottom: 5,
   },
-  reportDetails: {
-    marginBottom: 16,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  detailText: {
-    marginLeft: 8,
-    color: '#666',
+  fileDetails: {
+    color: "#666",
+    fontSize: 14,
+  fileDetails: {
+    color: "#666",
     fontSize: 14,
   },
-  reportFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#EEE',
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  statusText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  downloadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  downloadText: {
-    color: '#4CAF50',
-    marginLeft: 4,
-    fontWeight: '600',
+  loader: {
+    marginVertical: 20,
+  loader: {
+    marginVertical: 20,
   },
 });
 
-export default HealthRecords;
+export default UploadFiles;
+
+export default UploadFiles;
