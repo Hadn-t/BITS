@@ -1,11 +1,22 @@
 import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   Alert,
+  Alert,
   StyleSheet,
   ActivityIndicator,
+  ActivityIndicator,
   TouchableOpacity,
+  Platform,
+} from "react-native";
+import * as DocumentPicker from "expo-document-picker";
+
+const DOCUMENT_TYPES = {
+  prescription: "Prescription",
+  lab_result: "Lab Result",
+};
   Platform,
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
@@ -51,49 +62,32 @@ const UploadFiles = () => {
 
     try {
       const formData = new FormData();
-
-      // Create file object
       const fileToUpload = {
         uri: selectedFile.uri,
         type: selectedFile.mimeType || "image/jpeg",
         name: selectedFile.name,
       };
 
-      console.log("File object:", fileToUpload);
-
       formData.append("file", fileToUpload);
       formData.append("user_id", "user123");
       formData.append("category", selectedDocType);
 
-      console.log("FormData details:", {
-        file: fileToUpload,
-        user_id: "user123",
-        category: selectedDocType,
-      });
+      const csrfToken = "YOUR_CSRF_TOKEN"; // Replace with the actual CSRF token
 
-      const url = "http://192.168.1.2:5000/core/upload/";
-      console.log("Sending request to:", url);
-
-      const response = await fetch(url, {
+      const response = await fetch("http://192.168.1.2:5000/core/upload/", {
         method: "POST",
         body: formData,
         headers: {
           Accept: "application/json",
+          "X-CSRFToken": csrfToken, // Include CSRF token here
         },
       });
 
-      console.log("Response headers:", response.headers);
-      console.log("Response status:", response.status);
-
-      const responseText = await response.text();
-      console.log("Raw response:", responseText);
-
       if (!response.ok) {
-        throw new Error(
-          `Upload failed with status ${response.status}: ${responseText}`
-        );
+        throw new Error(`Upload failed: ${response.status}`);
       }
 
+      const responseText = await response.text();
       Alert.alert("Success", "File uploaded successfully!");
       setSelectedFile(null);
       setSelectedDocType(null);
@@ -158,7 +152,58 @@ const UploadFiles = () => {
               <Text style={styles.buttonText}>Upload</Text>
             </TouchableOpacity>
           ))}
+  return (
+    <View style={styles.container}>
+      <Text style={styles.header}>Upload File</Text>
+
+      <View style={styles.mainContent}>
+        <View style={styles.buttonContainer}>
+          {Object.entries(DOCUMENT_TYPES).map(([key, value]) => (
+            <TouchableOpacity
+              key={key}
+              style={[
+                styles.button,
+                styles.typeButton,
+                selectedDocType === key && styles.selectedButton,
+              ]}
+              onPress={() => pickDocument(key)}
+            >
+              <Text style={styles.buttonText}>{value}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {selectedFile && (
+          <View style={styles.fileInfo}>
+            <Text style={styles.fileType}>
+              Type: {DOCUMENT_TYPES[selectedDocType]}
+            </Text>
+            <Text style={styles.fileName} numberOfLines={1}>
+              File: {selectedFile.name}
+            </Text>
+            <Text style={styles.fileDetails}>
+              Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+            </Text>
+          </View>
+        )}
+
+        {selectedFile &&
+          (isLoading ? (
+            <ActivityIndicator
+              style={styles.loader}
+              color="#2196F3"
+              size="large"
+            />
+          ) : (
+            <TouchableOpacity
+              style={[styles.button, styles.uploadButton]}
+              onPress={uploadFile}
+            >
+              <Text style={styles.buttonText}>Upload</Text>
+            </TouchableOpacity>
+          ))}
       </View>
+    </View>
     </View>
   );
 };
@@ -168,8 +213,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: "#fff",
+    padding: 20,
+    backgroundColor: "#fff",
   },
   header: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 25,
+    color: "#333",
+  },
+  mainContent: {
+    gap: 20,
     fontSize: 22,
     fontWeight: "bold",
     marginBottom: 25,
@@ -182,7 +236,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 15,
     marginBottom: 20,
+  buttonContainer: {
+    flexDirection: "row",
+    gap: 15,
+    marginBottom: 20,
   },
+  button: {
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
   button: {
     padding: 15,
     borderRadius: 8,
@@ -196,9 +259,18 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   typeButton: {
+  typeButton: {
     flex: 1,
+    backgroundColor: "#2196F3",
     backgroundColor: "#2196F3",
   },
   selectedButton: {
@@ -207,7 +279,23 @@ const styles = StyleSheet.create({
   uploadButton: {
     backgroundColor: "#4CAF50",
     marginTop: 10,
+  selectedButton: {
+    backgroundColor: "#1976D2",
   },
+  uploadButton: {
+    backgroundColor: "#4CAF50",
+    marginTop: 10,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  fileInfo: {
+    backgroundColor: "#f5f5f5",
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 10,
   buttonText: {
     color: "#fff",
     fontSize: 16,
@@ -227,16 +315,32 @@ const styles = StyleSheet.create({
   },
   fileName: {
     color: "#666",
+  fileType: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 5,
+    color: "#444",
+  },
+  fileName: {
+    color: "#666",
     fontSize: 14,
     marginBottom: 5,
+    marginBottom: 5,
   },
+  fileDetails: {
+    color: "#666",
+    fontSize: 14,
   fileDetails: {
     color: "#666",
     fontSize: 14,
   },
   loader: {
     marginVertical: 20,
+  loader: {
+    marginVertical: 20,
   },
 });
+
+export default UploadFiles;
 
 export default UploadFiles;
