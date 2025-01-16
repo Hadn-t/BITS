@@ -51,49 +51,32 @@ const UploadFiles = () => {
 
     try {
       const formData = new FormData();
-
-      // Create file object
       const fileToUpload = {
         uri: selectedFile.uri,
         type: selectedFile.mimeType || "image/jpeg",
         name: selectedFile.name,
       };
 
-      console.log("File object:", fileToUpload);
-
       formData.append("file", fileToUpload);
       formData.append("user_id", "user123");
       formData.append("category", selectedDocType);
 
-      console.log("FormData details:", {
-        file: fileToUpload,
-        user_id: "user123",
-        category: selectedDocType,
-      });
+      const csrfToken = "YOUR_CSRF_TOKEN"; // Replace with the actual CSRF token
 
-      const url = "http://192.168.1.2:5000/core/upload/";
-      console.log("Sending request to:", url);
-
-      const response = await fetch(url, {
+      const response = await fetch("http://192.168.1.2:5000/core/upload/", {
         method: "POST",
         body: formData,
         headers: {
           Accept: "application/json",
+          "X-CSRFToken": csrfToken, // Include CSRF token here
         },
       });
 
-      console.log("Response headers:", response.headers);
-      console.log("Response status:", response.status);
-
-      const responseText = await response.text();
-      console.log("Raw response:", responseText);
-
       if (!response.ok) {
-        throw new Error(
-          `Upload failed with status ${response.status}: ${responseText}`
-        );
+        throw new Error(`Upload failed: ${response.status}`);
       }
 
+      const responseText = await response.text();
       Alert.alert("Success", "File uploaded successfully!");
       setSelectedFile(null);
       setSelectedDocType(null);
