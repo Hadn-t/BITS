@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,14 +11,15 @@ import {
   Platform,
   Linking,
   Dimensions,
-} from 'react-native';
-import * as Location from 'expo-location';
-import MapView, { Marker, PROVIDER_GOOGLE, Circle } from 'react-native-maps';
-import axios from 'axios';
-import { MaterialIcons } from '@expo/vector-icons';
+  Button,
+} from "react-native";
+import * as Location from "expo-location";
+import MapView, { Marker, PROVIDER_GOOGLE, Circle } from "react-native-maps";
+import axios from "axios";
+import { MaterialIcons } from "@expo/vector-icons";
+import Slider from "@react-native-community/slider";
 
-const RADIUS = 5000; // 5km in meters
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 const ASPECT_RATIO = width / height;
 const LATITUDE_DELTA = 0.0922;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
@@ -30,20 +31,36 @@ const NearbyHospitals = () => {
   const [loading, setLoading] = useState(false);
   const [selectedHospital, setSelectedHospital] = useState(null);
   const [initialRegion, setInitialRegion] = useState(null);
+  const [RADIUS, setRADIUS] = useState(5000);
 
   // Calculate the region for 5km radius
-  const getRegionForRadius = useCallback((latitude, longitude) => {
-    const circumference = 40075;
-    const oneDegreeOfLatitudeInMeters = 111.32 * 1000;
-    const angularDistance = RADIUS / oneDegreeOfLatitudeInMeters;
+  const getRegionForRadius = useCallback(
+    (latitude, longitude) => {
+      const circumference = 40075; // Earth's circumference in km
+      const oneDegreeOfLatitudeInMeters = 111.32 * 1000; // Meters per degree of latitude
+      const angularDistance = RADIUS / oneDegreeOfLatitudeInMeters;
 
-    return {
-      latitude,
-      longitude,
-      latitudeDelta: angularDistance * 2,
-      longitudeDelta: angularDistance * 2 * ASPECT_RATIO,
-    };
-  }, []);
+      return {
+        latitude,
+        longitude,
+        latitudeDelta: angularDistance * 2,
+        longitudeDelta: angularDistance * 2 * ASPECT_RATIO,
+      };
+    },
+    [RADIUS]
+  );
+
+  useEffect(() => {
+    if (currentLocation) {
+      const region = getRegionForRadius(
+        currentLocation.latitude,
+        currentLocation.longitude
+      );
+      if (mapRef.current) {
+        mapRef.current.animateToRegion(region, 1000); // Adjust zoom animation
+      }
+    }
+  }, [RADIUS, currentLocation]);
 
   // Get current location
   const getCurrentLocation = useCallback(async () => {
@@ -51,8 +68,11 @@ const NearbyHospitals = () => {
       setLoading(true);
       const { status } = await Location.requestForegroundPermissionsAsync();
 
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Please grant location permissions to use this app.');
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Denied",
+          "Please grant location permissions to use this app."
+        );
         return;
       }
 
@@ -62,7 +82,7 @@ const NearbyHospitals = () => {
 
       const { latitude, longitude } = location.coords;
       const region = getRegionForRadius(latitude, longitude);
-      
+
       setCurrentLocation(location.coords);
       setInitialRegion(region);
 
@@ -70,7 +90,7 @@ const NearbyHospitals = () => {
         mapRef.current.animateToRegion(region, 1000);
       }
     } catch (error) {
-      Alert.alert('Error', 'Could not fetch your location');
+      Alert.alert("Error", "Could not fetch your location");
     } finally {
       setLoading(false);
     }
@@ -79,12 +99,14 @@ const NearbyHospitals = () => {
   // Calculate distance between two coordinates
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c; // Distance in km
   };
@@ -97,6 +119,7 @@ const NearbyHospitals = () => {
       setLoading(true);
       const { latitude, longitude } = currentLocation;
 
+      // Use Overpass API to fetch hospitals within the given radius
       const query = `
         [out:json];
         (
@@ -109,21 +132,28 @@ const NearbyHospitals = () => {
       `;
 
       const response = await axios.get(
-        `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`
+        `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(
+          query
+        )}`
       );
 
       if (response.data?.elements) {
+        // Process the hospitals data
         const processedHospitals = response.data.elements
-          .filter(item => item.lat && item.lon)
-          .map(hospital => ({
+          .filter((item) => item.lat && item.lon)
+          .map((hospital) => ({
             id: hospital.id.toString(),
-            name: hospital.tags?.name || 'Unnamed Hospital',
+            name: hospital.tags?.name || "Unnamed Hospital",
             address: hospital.tags?.["addr:street"]
-              ? `${hospital.tags?.["addr:street"]} ${hospital.tags?.["addr:housenumber"] || ''}`
-              : 'Address unavailable',
-            phone: hospital.tags?.phone || hospital.tags?.["contact:phone"] || 'Not available',
-            website: hospital.tags?.website || 'Not available',
-            emergency: hospital.tags?.emergency === 'yes',
+              ? `${hospital.tags?.["addr:street"]} ${hospital.tags?.["addr:housenumber"] || ""
+              }`
+              : "Address unavailable",
+            phone:
+              hospital.tags?.phone ||
+              hospital.tags?.["contact:phone"] ||
+              "Not available",
+            website: hospital.tags?.website || "Not available",
+            emergency: hospital.tags?.emergency === "yes",
             lat: hospital.lat,
             lon: hospital.lon,
             distance: calculateDistance(
@@ -138,33 +168,36 @@ const NearbyHospitals = () => {
         setHospitals(processedHospitals);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to fetch nearby hospitals');
+      Alert.alert("Error", "Failed to fetch nearby hospitals");
     } finally {
       setLoading(false);
     }
-  }, [currentLocation]);
+  }, [currentLocation, RADIUS]);
 
   // Action handlers
   const makePhoneCall = (phone) => {
-    if (phone !== 'Not available') {
+    if (phone !== "Not available") {
       Linking.openURL(`tel:${phone}`);
     } else {
-      Alert.alert('Unavailable', 'Phone number not available for this hospital.');
+      Alert.alert(
+        "Unavailable",
+        "Phone number not available for this hospital."
+      );
     }
   };
 
   const openWebsite = (website) => {
-    if (website !== 'Not available') {
+    if (website !== "Not available") {
       Linking.openURL(website);
     } else {
-      Alert.alert('Unavailable', 'Website not available for this hospital.');
+      Alert.alert("Unavailable", "Website not available for this hospital.");
     }
   };
 
   const openDirections = (hospital) => {
     const scheme = Platform.select({
-      ios: 'maps:',
-      android: 'geo:',
+      ios: "maps:",
+      android: "geo:",
     });
     const url = Platform.select({
       ios: `${scheme}?q=${hospital.name}&ll=${hospital.lat},${hospital.lon}`,
@@ -177,12 +210,15 @@ const NearbyHospitals = () => {
   const focusOnHospital = (hospital) => {
     setSelectedHospital(hospital);
     if (mapRef.current) {
-      mapRef.current.animateToRegion({
-        latitude: hospital.lat,
-        longitude: hospital.lon,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }, 1000);
+      mapRef.current.animateToRegion(
+        {
+          latitude: hospital.lat,
+          longitude: hospital.lon,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        1000
+      );
     }
   };
 
@@ -190,47 +226,54 @@ const NearbyHospitals = () => {
   const renderHospitalCard = ({ item }) => {
     const getButtonStyle = (infoAvailable) => ({
       ...styles.actionButton,
-      backgroundColor: infoAvailable ? '#3498db' : '#bdc3c7',
+      backgroundColor: infoAvailable ? "#3498db" : "#bdc3c7",
       opacity: infoAvailable ? 1 : 0.6,
     });
-  
+
     return (
       <TouchableOpacity
-        style={[styles.hospitalCard, selectedHospital?.id === item.id && styles.selectedCard]}
+        style={[
+          styles.hospitalCard,
+          selectedHospital?.id === item.id && styles.selectedCard,
+        ]}
         onPress={() => focusOnHospital(item)}
         activeOpacity={0.7}
       >
         <View style={styles.cardHeader}>
-          <Text style={styles.hospitalName} numberOfLines={2}>{item.name}</Text>
+          <Text style={styles.hospitalName} numberOfLines={2}>
+            {item.name}
+          </Text>
           {item.emergency && (
             <View style={styles.emergencyBadge}>
               <Text style={styles.emergencyText}>24/7</Text>
             </View>
           )}
         </View>
-        
+
         <View style={styles.cardInfo}>
           <Text style={styles.distance}>
-            <MaterialIcons name="location-on" size={16} color="#666" />
-            {' '}{item.distance} km away
+            <MaterialIcons name="location-on" size={16} color="#666" />{" "}
+            {item.distance} km away
           </Text>
-          <Text style={styles.address} numberOfLines={2}>{item.address}</Text>
+          <Text style={styles.address} numberOfLines={2}>
+            {item.address}
+          </Text>
         </View>
 
         <View style={styles.actionButtons}>
           <TouchableOpacity
-            style={getButtonStyle(item.phone !== 'Not available')}
+            style={getButtonStyle(item.phone !== "Not available")}
             onPress={() => makePhoneCall(item.phone)}
-            disabled={item.phone === 'Not available'}
+            disabled={item.phone === "Not available"}
           >
             <MaterialIcons name="phone" size={20} color="#fff" />
             <Text style={styles.buttonText}>Call</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={getButtonStyle(item.website !== 'Not available')}
+            style={getButtonStyle(item.website !== "Not available")}
             onPress={() => openWebsite(item.website)}
-            disabled={item.website === 'Not available'}
+            disabled={item.website === "Not available"}
           >
             <MaterialIcons name="web" size={20} color="#fff" />
             <Text style={styles.buttonText}>Website</Text>
@@ -305,14 +348,17 @@ const NearbyHospitals = () => {
                 description={`${hospital.distance} km away`}
                 onPress={() => setSelectedHospital(hospital)}
               >
-                <View style={[
-                  styles.markerContainer,
-                  selectedHospital?.id === hospital.id && styles.selectedMarker
-                ]}>
+                <View
+                  style={[
+                    styles.markerContainer,
+                    selectedHospital?.id === hospital.id &&
+                    styles.selectedMarker,
+                  ]}
+                >
                   <MaterialIcons
                     name="local-hospital"
                     size={24}
-                    color={hospital.emergency ? '#e74c3c' : '#3498db'}
+                    color={hospital.emergency ? "#e74c3c" : "#3498db"}
                   />
                 </View>
               </Marker>
@@ -322,9 +368,19 @@ const NearbyHospitals = () => {
       </View>
 
       <View style={styles.listContainer}>
-        <View style={styles.radiusIndicator}>
-          <MaterialIcons name="room" size={20} color="#0066cc" />
-          <Text style={styles.radiusText}>Showing hospitals within 5km radius</Text>
+        <View style={styles.sliderContainer}>
+          <Text style={styles.radiusText}>RADIUS: {RADIUS / 1000} km</Text>
+          <Slider
+            style={styles.slider}
+            minimumValue={1000}
+            maximumValue={15000}
+            step={500}
+            value={RADIUS}
+            minimumTrackTintColor="#0066cc"
+            maximumTrackTintColor="#d3d3d3"
+            thumbTintColor="#0066cc"
+            onValueChange={(value) => setRADIUS(value)}
+          />
         </View>
 
         <FlatList
@@ -344,12 +400,12 @@ const NearbyHospitals = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   mapContainer: {
     flex: 1,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: "#e0e0e0",
   },
   map: {
     flex: 1,
@@ -362,177 +418,176 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   loadingOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
     zIndex: 1000,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#0066cc',
-    fontWeight: '600',
+    color: "#0066cc",
+    fontWeight: "600",
     letterSpacing: 0.3,
   },
   radiusIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f8ff',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f8ff",
     padding: 14,
     borderRadius: 10,
     marginBottom: 12,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 3,
   },
   radiusText: {
     marginLeft: 8,
-    color: '#0066cc',
+    color: "#0066cc",
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     letterSpacing: 0.2,
   },
   hospitalCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 16,
     borderRadius: 14,
     marginBottom: 12,
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.12,
     shadowRadius: 5,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: "#f0f0f0",
   },
   selectedCard: {
     borderWidth: 2,
-    borderColor: '#3498db',
-    shadowColor: '#3498db',
+    borderColor: "#3498db",
+    shadowColor: "#3498db",
     shadowOpacity: 0.2,
     elevation: 5,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: 8,
   },
   hospitalName: {
     flex: 1,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     marginRight: 12,
-    color: '#2c3e50',
+    color: "#2c3e50",
     letterSpacing: 0.3,
   },
   cardInfo: {
     marginVertical: 10,
   },
   emergencyBadge: {
-    backgroundColor: '#e74c3c',
+    backgroundColor: "#e74c3c",
     borderRadius: 6,
     paddingVertical: 4,
     paddingHorizontal: 8,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },
   emergencyText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: 0.5,
   },
   distance: {
     fontSize: 15,
-    color: '#34495e',
+    color: "#34495e",
     marginBottom: 6,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   address: {
     fontSize: 14,
-    color: '#7f8c8d',
+    color: "#7f8c8d",
     lineHeight: 20,
     marginBottom: 4,
   },
   actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "flex-start",
     marginTop: 8,
     gap: 10,
   },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3498db',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#3498db",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 2,
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 6,
     letterSpacing: 0.3,
-  }
-  ,markerContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 200,  // Increased for smoother corners
-    // padding: 1,        // Slightly reduced padding
-    elevation: 2,      // Reduced elevation
-    shadowColor: '#000',
+  },
+  markerContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 200,
+    elevation: 2,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
-    borderWidth: 0.5,  // Reduced border width for subtler stroke
-    borderColor: 'rgba(255, 255, 255, 0.7)', // Semi-transparent white border
+    borderWidth: 0.5,
+    borderColor: "rgba(255, 255, 255, 0.7)",
   },
   selectedMarker: {
-    borderWidth: 2,    // Increased border width for selected state
-    borderColor: '#e74c3c', // Changed to red color
-    backgroundColor: '#fff',
-    transform: [{ scale: 1.15 }], // Slightly increased scale
+    borderWidth: 2,
+    borderColor: "#e74c3c",
+    backgroundColor: "#fff",
+    transform: [{ scale: 1.15 }],
     elevation: 4,
     shadowOpacity: 0.25,
     shadowOffset: { width: 0, height: 2 },
   },
   refreshButton: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     bottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 30,
     padding: 12,
     elevation: 4,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
   },
   infoWindow: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 10,
     borderRadius: 8,
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
@@ -540,34 +595,39 @@ const styles = StyleSheet.create({
   },
   infoTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#2c3e50',
+    fontWeight: "600",
+    color: "#2c3e50",
     marginBottom: 4,
   },
   infoDistance: {
     fontSize: 12,
-    color: '#7f8c8d',
+    color: "#7f8c8d",
   },
   emptyState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#95a5a6',
-    textAlign: 'center',
+    color: "#95a5a6",
+    textAlign: "center",
     marginTop: 12,
     lineHeight: 22,
-  }
+  },
+  sliderContainer: {
+    marginBottom: 12,
+  },
+  slider: {
+    width: "100%",
+    height: 40,
+  },
 });
 
 export default NearbyHospitals;
 
-
 // Without MAP
-
 
 // import React, { useState, useEffect, useCallback } from 'react';
 // import {
@@ -723,7 +783,7 @@ export default NearbyHospitals;
 //       backgroundColor: infoAvailable ? '#3498db' : '#bdc3c7', // Blue for enabled, grey for disabled
 //       opacity: infoAvailable ? 1 : 0.6, // Full opacity for enabled, reduced for disabled
 //     });
-  
+
 //     return (
 //       <TouchableOpacity
 //         style={[styles.hospitalCard, selectedHospital?.id === item.id && styles.selectedCard]}
@@ -747,7 +807,7 @@ export default NearbyHospitals;
 //         </View>
 //         <Text style={styles.distance}>{item.distance} km away</Text>
 //         <Text style={styles.address}>{item.address}</Text>
-  
+
 //         <View style={styles.actionButtons}>
 //           <TouchableOpacity
 //             style={getButtonStyle(item.phone !== 'Not available')}

@@ -22,6 +22,7 @@
     "@fortawesome/react-native-fontawesome": "^0.3.2",
     "@react-leaflet/core": "^3.0.0",
     "@react-native-community/datetimepicker": "^8.2.0",
+    "@react-native-community/slider": "^4.5.5",
     "@react-native-picker/picker": "^2.11.0",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
