@@ -3,6 +3,8 @@ import { View, Text, Alert, TouchableOpacity, StyleSheet } from 'react-native';
 import Title from '@/common/Title';
 import Button from '@/common/Button';
 import Input from '@/common/Input';
+import { auth } from '../firbaseConfig';  // Import Firebase auth
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
     const [username, setUsername] = useState('');
@@ -17,7 +19,7 @@ const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
     const [passwordError, setPasswordError] = useState('');
     const [rePasswordError, setRePasswordError] = useState('');
 
-    const onSignUp = () => {
+    const onSignUp = async () => {
         const faultUsername = !username || username.length < 5;
         const faultFirstName = !firstName;
         const faultLastName = !lastName;
@@ -34,10 +36,16 @@ const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
             return;
         }
 
-        setAuth(true);
-        setRole(role);
-        Alert.alert('Success', `${role.charAt(0).toUpperCase() + role.slice(1)} signed up successfully!`);
-        // navigation.navigate('Home');
+        // Firebase sign-up logic
+        try {
+            await createUserWithEmailAndPassword(auth,username, password);
+            setAuth(true);
+            setRole(role);
+            Alert.alert('Success', `${role.charAt(0).toUpperCase() + role.slice(1)} signed up successfully!`);
+            // navigation.navigate('Home');
+        } catch (error) {
+            Alert.alert('Error', error.message);
+        }
     };
 
     return (
@@ -45,9 +53,9 @@ const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
             <Title text={`Sign Up as ${role.charAt(0).toUpperCase() + role.slice(1)}`} />
 
             <Input
-                title="Username"
-                inTitle="abc_xyz"
-                type="default"
+                title="Email"
+                inTitle="abc@hadnt.com"
+                type="email-address"
                 hidden={false}
                 value={username}
                 error={usernameError}
