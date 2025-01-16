@@ -1,9 +1,10 @@
 import React, { useState, useLayoutEffect } from 'react';
-import { View, Text, Alert, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, SafeAreaView, Alert } from 'react-native';
 import Title from '@/common/Title';
 import Button from '@/common/Button';
 import SignUp from '@/common/SignUp'; 
 import SignIn from '@/common/SignIn'; 
+import { auth } from '../firbaseConfig';  // Import firebase auth
 
 const Authentication = ({ setAuth, setRole, navigation }) => {
   const [mode, setMode] = useState('signIn'); 
@@ -14,6 +15,26 @@ const Authentication = ({ setAuth, setRole, navigation }) => {
       headerShown: false,
     });
   }, [navigation]);
+
+  const handleSignIn = async (email, password) => {
+    try {
+      await auth().signInWithEmailAndPassword(email, password);
+      setAuth(true);
+      setRole(role);  // Set role here after sign-in
+    } catch (error) {
+      Alert.alert('Error', error.message);
+    }
+  };
+
+  const handleSignUp = async (email, password) => {
+    try {
+      await auth().createUserWithEmailAndPassword(email, password);
+      setAuth(true);
+      setRole(role);  // Set role after sign-up
+    } catch (error) {
+      Alert.alert('Error', error.message);
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -36,11 +57,11 @@ const Authentication = ({ setAuth, setRole, navigation }) => {
         </View>
 
         {mode === 'signIn' && (
-          <SignIn role={role} setAuth={setAuth} setRole={setRole} navigation={navigation} setMode={setMode} />
+          <SignIn role={role} setAuth={setAuth} setRole={setRole} navigation={navigation} setMode={setMode} handleSignIn={handleSignIn} />
         )}
 
         {mode === 'signUp' && (
-          <SignUp role={role} setAuth={setAuth} setRole={setRole} navigation={navigation} setMode={setMode} />
+          <SignUp role={role} setAuth={setAuth} setRole={setRole} navigation={navigation} setMode={setMode} handleSignUp={handleSignUp} />
         )}
       </View>
     </SafeAreaView>

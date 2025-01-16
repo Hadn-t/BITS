@@ -29,7 +29,7 @@ const Input = ({
                 style={[styles.input, error && styles.errorInput]}
                 placeholder={inTitle}
                 secureTextEntry={hidden}
-                keyboardType={type === 'numeric' ? 'numeric' : 'default'}
+                keyboardType={type}
                 value={value}
                 onChangeText={handleTextChange}
             />
