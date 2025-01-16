@@ -1,15 +1,19 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
-from .models import FileUpload
-from .serializers import FileUploadSerializer
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 
-class FileUploadView(APIView):
-    parser_classes = (MultiPartParser, FormParser)
+@csrf_exempt  # Temporarily disable CSRF validation for testing
+def upload_file(request):
+    if request.method == "POST":
+        user_id = request.POST.get("user_id")
+        category = request.POST.get("category")
+        file = request.FILES.get("file")
 
-    def post(self, request, *args, **kwargs):
-        serializer = FileUploadSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "File uploaded successfully"}, status=201)
-        return Response(serializer.errors, status=400)
+        if file:
+            file_name = default_storage.save(f"uploads/{file.name}", ContentFile(file.read()))
+            file_url = default_storage.url(file_name)
+            return JsonResponse({"success": True, "file_url": file_url})
+        else:
+            return JsonResponse({"error": "No file uploaded"}, status=400)
+    return JsonResponse({"error": "Invalid request"}, status=400)
