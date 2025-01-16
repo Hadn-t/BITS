@@ -6,6 +6,8 @@ import MainStack from "./screens/Main";
 import Authentication from "./screens/Authentication";
 
 import "./core/fontawesome";
+import NotificationDetail from "./screens/NotificationDetail";
+import Notifications from "./screens/Notification";
 
 
 const Stack = createNativeStackNavigator();
@@ -36,12 +38,14 @@ export default function App() {
           />
         ) : (
           <Stack.Screen name="Main">
-          {({ navigation, route }) => (
-            <MainStack {...{ navigation, route }} role={role} setAuth={setAuth} />
-          )}
-        </Stack.Screen>
-        
+            {({ navigation, route }) => (
+              <MainStack {...{ navigation, route }} role={role} setAuth={setAuth} />
+            )}
+          </Stack.Screen>
+
         )}
+        <Stack.Screen name="Notifications" component={Notifications} />
+        <Stack.Screen name="NotificationDetail" component={NotificationDetail} />
       </Stack.Navigator>
     </NavigationContainer>
   );
