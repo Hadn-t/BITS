@@ -9,11 +9,12 @@ import {
   Platform,
   SafeAreaView,
   Alert,
+  ScrollView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { MaterialIcons } from '@expo/vector-icons';
 
-const Appointment = ({navigation}) => {
+const Appointment = ({ navigation }) => {
   const [date, setDate] = useState(new Date());
   const [time, setTime] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -21,12 +22,13 @@ const Appointment = ({navigation}) => {
   const [appointments, setAppointments] = useState([]);
   const [description, setDescription] = useState('');
   const [isEditing, setIsEditing] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  useLayoutEffect(()=>{
-    navigation.setOptions({
-      headerShown:false,
-    })
-  },[])
+  useLayoutEffect(() => {
+    navigation?.setOptions({
+      headerShown: false,
+    });
+  }, []);
 
   const onChangeDate = (event, selectedDate) => {
     const currentDate = selectedDate || date;
@@ -46,7 +48,6 @@ const Appointment = ({navigation}) => {
       return false;
     }
     
-    // Validate that the appointment is not in the past
     const now = new Date();
     const appointmentDateTime = new Date(date);
     appointmentDateTime.setHours(time.getHours(), time.getMinutes());
@@ -75,61 +76,80 @@ const Appointment = ({navigation}) => {
         app.id === isEditing ? newAppointment : app
       ));
       setIsEditing(null);
+      Alert.alert('Success', 'Appointment updated successfully!');
     } else {
       setAppointments([...appointments, newAppointment].sort((a, b) => a.timestamp - b.timestamp));
+      Alert.alert('Success', 'New appointment created!');
     }
 
     setDescription('');
-    Alert.alert('Success', 'Appointment saved successfully!');
   };
 
-  const editAppointment = (appointment) => {
-    setDate(new Date(appointment.date));
-    setTime(new Date(appointment.timestamp));
-    setDescription(appointment.description);
-    setIsEditing(appointment.id);
-  };
+  const getStatusColor = (timestamp) => {
+    const appointmentDate = new Date(timestamp);
+    const today = new Date();
+    const diffTime = appointmentDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-  const deleteAppointment = (id) => {
-    Alert.alert(
-      'Delete Appointment',
-      'Are you sure you want to delete this appointment?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            setAppointments(appointments.filter(app => app.id !== id));
-          }
-        }
-      ]
-    );
+    if (diffDays < 0) return '#6B7280'; // Past
+    if (diffDays === 0) return '#10B981'; // Today
+    if (diffDays <= 3) return '#F59E0B'; // Upcoming
+    return '#3B82F6'; // Scheduled
   };
 
   const renderAppointmentItem = ({ item }) => (
     <View style={styles.appointmentItem}>
       <View style={styles.appointmentHeader}>
-        <Text style={styles.appointmentDate}>
-          {item.date}
-        </Text>
-        <Text style={styles.appointmentTime}>
-          {item.time}
-        </Text>
+        <View>
+          <Text style={styles.appointmentDate}>{item.date}</Text>
+          <View style={styles.timeContainer}>
+            <MaterialIcons name="access-time" size={16} color="#3B82F6" />
+            <Text style={styles.appointmentTime}>{item.time}</Text>
+          </View>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(item.timestamp)}20` }]}>
+          <Text style={[styles.statusText, { color: getStatusColor(item.timestamp) }]}>
+            {new Date(item.timestamp) < new Date() ? 'Past' : 
+             new Date(item.timestamp).toDateString() === new Date().toDateString() ? 'Today' : 'Upcoming'}
+          </Text>
+        </View>
       </View>
+
       <Text style={styles.appointmentDescription}>{item.description}</Text>
+      
       <View style={styles.appointmentActions}>
         <TouchableOpacity 
-          onPress={() => editAppointment(item)}
+          onPress={() => {
+            setIsEditing(item.id);
+            setDate(new Date(item.date));
+            setTime(new Date(item.timestamp));
+            setDescription(item.description);
+          }}
           style={styles.actionButton}
         >
-          <MaterialIcons name="edit" size={20} color="#4a90e2" />
+          <MaterialIcons name="edit" size={22} color="#3B82F6" />
         </TouchableOpacity>
         <TouchableOpacity 
-          onPress={() => deleteAppointment(item.id)}
+          onPress={() => {
+            Alert.alert(
+              'Delete Appointment',
+              'Are you sure you want to delete this appointment?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                  text: 'Delete',
+                  style: 'destructive',
+                  onPress: () => {
+                    setAppointments(appointments.filter(app => app.id !== item.id));
+                    Alert.alert('Success', 'Appointment deleted successfully!');
+                  }
+                }
+              ]
+            );
+          }}
           style={styles.actionButton}
         >
-          <MaterialIcons name="delete" size={20} color="#e74c3c" />
+          <MaterialIcons name="delete" size={22} color="#EF4444" />
         </TouchableOpacity>
       </View>
     </View>
@@ -137,87 +157,106 @@ const Appointment = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>
-        {isEditing ? 'Edit Appointment' : 'Create an Appointment'}
-      </Text>
+      <ScrollView>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Appointment Manager</Text>
+          <TouchableOpacity style={styles.profileButton}>
+            <MaterialIcons name="person" size={24} color="#3B82F6" />
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Date:</Text>
-        <TouchableOpacity 
-          style={styles.pickerButton}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Text style={styles.pickerButtonText}>{date.toDateString()}</Text>
-          <MaterialIcons name="calendar-today" size={20} color="#4a90e2" />
-        </TouchableOpacity>
-
-        {showDatePicker && (
-          <DateTimePicker
-            value={date}
-            mode="date"
-            display="default"
-            onChange={onChangeDate}
-            minimumDate={new Date()}
-          />
-        )}
-
-        <Text style={styles.label}>Time:</Text>
-        <TouchableOpacity 
-          style={styles.pickerButton}
-          onPress={() => setShowTimePicker(true)}
-        >
-          <Text style={styles.pickerButtonText}>
-            {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        <View style={styles.inputSection}>
+          <Text style={styles.sectionTitle}>
+            {isEditing ? 'Edit Appointment' : 'New Appointment'}
           </Text>
-          <MaterialIcons name="access-time" size={20} color="#4a90e2" />
-        </TouchableOpacity>
 
-        {showTimePicker && (
-          <DateTimePicker
-            value={time}
-            mode="time"
-            display="default"
-            onChange={onChangeTime}
+          <TouchableOpacity 
+            style={styles.dateTimeButton}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <MaterialIcons name="calendar-today" size={20} color="#3B82F6" />
+            <Text style={styles.dateTimeText}>{date.toDateString()}</Text>
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display="default"
+              onChange={onChangeDate}
+              minimumDate={new Date()}
+            />
+          )}
+
+          <TouchableOpacity 
+            style={styles.dateTimeButton}
+            onPress={() => setShowTimePicker(true)}
+          >
+            <MaterialIcons name="access-time" size={20} color="#3B82F6" />
+            <Text style={styles.dateTimeText}>
+              {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          </TouchableOpacity>
+
+          {showTimePicker && (
+            <DateTimePicker
+              value={time}
+              mode="time"
+              display="default"
+              onChange={onChangeTime}
+            />
+          )}
+
+          <TextInput
+            style={styles.descriptionInput}
+            placeholder="Enter appointment details"
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            numberOfLines={3}
+            placeholderTextColor="#9CA3AF"
           />
-        )}
 
-        <Text style={styles.label}>Description:</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter appointment details"
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          numberOfLines={3}
-        />
+          <TouchableOpacity
+            style={[styles.saveButton, !description.trim() && styles.saveButtonDisabled]}
+            onPress={saveAppointment}
+            disabled={!description.trim()}
+          >
+            <Text style={styles.saveButtonText}>
+              {isEditing ? 'Update Appointment' : 'Save Appointment'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          style={[styles.saveButton, !description.trim() && styles.saveButtonDisabled]}
-          onPress={saveAppointment}
-          disabled={!description.trim()}
-        >
-          <Text style={styles.saveButtonText}>
-            {isEditing ? 'Update Appointment' : 'Save Appointment'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.appointmentsList}>
-        <Text style={styles.subHeader}>Upcoming Appointments</Text>
-        {appointments.length === 0 ? (
-          <View style={styles.emptyState}>
-            <MaterialIcons name="event-busy" size={40} color="#ccc" />
-            <Text style={styles.emptyStateText}>No appointments scheduled</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={appointments}
-            keyExtractor={(item) => item.id}
-            renderItem={renderAppointmentItem}
-            showsVerticalScrollIndicator={false}
+        <View style={styles.appointmentsList}>
+          <Text style={styles.sectionTitle}>Upcoming Appointments</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search appointments..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#9CA3AF"
           />
-        )}
-      </View>
+          
+          {appointments.length === 0 ? (
+            <View style={styles.emptyState}>
+              <MaterialIcons name="event-busy" size={48} color="#D1D5DB" />
+              <Text style={styles.emptyStateText}>No appointments scheduled</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={appointments.filter(app => 
+                app.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                app.date.toLowerCase().includes(searchQuery.toLowerCase())
+              )}
+              keyExtractor={(item) => item.id}
+              renderItem={renderAppointmentItem}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+            />
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -225,82 +264,99 @@ const Appointment = ({navigation}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F3F4F6',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 20,
+    color: '#1F2937',
   },
-  subHeader: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 10,
+  profileButton: {
+    padding: 8,
+    backgroundColor: '#EBF5FF',
+    borderRadius: 20,
   },
-  inputContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+  inputSection: {
+    backgroundColor: '#FFFFFF',
+    margin: 16,
     padding: 16,
-    marginBottom: 20,
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  label: {
-    fontSize: 16,
+  sectionTitle: {
+    fontSize: 20,
     fontWeight: '600',
-    color: '#34495e',
-    marginBottom: 8,
+    color: '#1F2937',
+    marginBottom: 16,
   },
-  pickerButton: {
+  dateTimeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#E5E7EB',
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
   },
-  pickerButtonText: {
+  dateTimeText: {
+    marginLeft: 8,
     fontSize: 16,
-    color: '#2c3e50',
+    color: '#1F2937',
   },
-  input: {
+  descriptionInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#E5E7EB',
     borderRadius: 8,
     padding: 12,
-    marginBottom: 16,
     fontSize: 16,
+    minHeight: 100,
     textAlignVertical: 'top',
-    minHeight: 80,
+    marginBottom: 16,
+    color: '#1F2937',
   },
   saveButton: {
-    backgroundColor: '#4a90e2',
+    backgroundColor: '#3B82F6',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
   },
   saveButtonDisabled: {
-    backgroundColor: '#b2b2b2',
+    backgroundColor: '#9CA3AF',
   },
   saveButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
   appointmentsList: {
-    flex: 1,
+    padding: 16,
+  },
+  searchInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    fontSize: 16,
+    color: '#1F2937',
   },
   appointmentItem: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -312,44 +368,57 @@ const styles = StyleSheet.create({
   appointmentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
   appointmentDate: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  timeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   appointmentTime: {
-    fontSize: 16,
-    color: '#4a90e2',
-    fontWeight: '600',
+    marginLeft: 4,
+    fontSize: 14,
+    color: '#3B82F6',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   appointmentDescription: {
     fontSize: 15,
-    color: '#34495e',
-    marginBottom: 8,
+    color: '#4B5563',
+    marginBottom: 12,
   },
   appointmentActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 8,
-    marginTop: 8,
+    borderTopColor: '#E5E7EB',
+    paddingTop: 12,
   },
   actionButton: {
     padding: 8,
     marginLeft: 16,
   },
   emptyState: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 40,
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#999',
+    color: '#9CA3AF',
     marginTop: 12,
   },
 });
