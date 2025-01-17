@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   TextInput,
+  FlatList,
+  Image,
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 
@@ -15,11 +17,39 @@ const DOCUMENT_TYPES = {
   lab_result: "Lab Result",
 };
 
-const UploadFiles = () => {
+const HealthRecordsScreen = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [filesLoading, setFilesLoading] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState(null);
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
+  const [userFiles, setUserFiles] = useState([]);
+
+  // Fetch user's files on component mount
+  useEffect(() => {
+    fetchUserFiles();
+  }, []);
+
+  const fetchUserFiles = async () => {
+    setFilesLoading(true);
+    try {
+      const response = await fetch(
+        "http://192.168.29.157:5000/core/user/user123/files/"
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch files: ${response.status}`);
+      }
+
+      const files = await response.json();
+      setUserFiles(files);
+    } catch (error) {
+      console.error("Error fetching user files:", error);
+      Alert.alert("Error", `Failed to fetch files: ${error.message}`);
+    } finally {
+      setFilesLoading(false);
+    }
+  };
 
   const pickDocument = async (documentType) => {
     try {
@@ -30,8 +60,6 @@ const UploadFiles = () => {
 
       if (!result.canceled) {
         const asset = result.assets[0];
-        console.log("Picked asset:", asset);
-
         setSelectedFile(asset);
         setSelectedDocType(documentType);
       }
@@ -52,7 +80,6 @@ const UploadFiles = () => {
     try {
       const formData = new FormData();
 
-
       const fileToUpload = {
         uri: selectedFile.uri,
         type: selectedFile.mimeType || "application/octet-stream",
@@ -62,6 +89,7 @@ const UploadFiles = () => {
       formData.append("file", fileToUpload);
       formData.append("user_id", "user123");
       formData.append("category", selectedDocType);
+      formData.append("name", name);
 
       const csrfToken = "YOUR_CSRF_TOKEN";
 
@@ -78,20 +106,38 @@ const UploadFiles = () => {
         throw new Error(`Upload failed: ${response.status}`);
       }
 
-      const responseText = await response.text();
       Alert.alert("Success", "File uploaded successfully!");
       setSelectedFile(null);
       setSelectedDocType(null);
+      setName("");
+
+      // Refresh the file list after successful upload
+      fetchUserFiles();
     } catch (error) {
-      console.error("Full error details:", {
-        message: error.message,
-        stack: error.stack,
-      });
+      console.error("Error during file upload:", error);
       Alert.alert("Error", `Upload failed: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const renderFileItem = ({ item }) => (
+    <View style={styles.fileCard}>
+      <Image
+        source={{ uri: `http://192.168.29.157:5000${item.file}` }}
+        style={styles.fileThumbnail}
+      />
+      <View style={styles.fileInfo}>
+        <Text style={styles.fileName}>Name: {item.file_name}</Text>
+        <Text style={styles.fileCategory}>
+          Category: {DOCUMENT_TYPES[item.category] || item.category}
+        </Text>
+        <Text style={styles.fileDate}>
+          Uploaded: {new Date(item.uploaded_at).toLocaleDateString()}
+        </Text>
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -118,27 +164,15 @@ const UploadFiles = () => {
           <View style={styles.fileInfo}>
             <TextInput
               placeholder="Enter the File Name"
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                height: 60,
-                borderColor: "teal",
-                borderWidth: 2,
-              }}
-              value = {name}
+              style={styles.input}
+              value={name}
               onChangeText={setName}
-            ></TextInput>
-            <View style = {{
-              paddingLeft:12,
-              marginTop:12,
-            }}>
-              <Text style={styles.fileType}>
+            />
+            <View>
+              <Text style={styles.fileDetails}>
                 Type: {DOCUMENT_TYPES[selectedDocType]}
               </Text>
-
-              <Text style={styles.fileName} numberOfLines={1}>
-                File: {selectedFile.name}
-              </Text>
+              <Text style={styles.fileDetails}>File: {selectedFile.name}</Text>
               <Text style={styles.fileDetails}>
                 Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
               </Text>
@@ -161,6 +195,18 @@ const UploadFiles = () => {
               <Text style={styles.buttonText}>Upload</Text>
             </TouchableOpacity>
           ))}
+
+        <Text style={styles.subHeader}>Your Uploaded Files</Text>
+        {filesLoading ? (
+          <ActivityIndicator color="#2196F3" size="large" />
+        ) : (
+          <FlatList
+            data={userFiles}
+            renderItem={renderFileItem}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.fileList}
+          />
+        )}
       </View>
     </View>
   );
@@ -178,6 +224,12 @@ const styles = StyleSheet.create({
     marginBottom: 25,
     color: "#333",
   },
+  subHeader: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginVertical: 10,
+    color: "#444",
+  },
   mainContent: {
     gap: 20,
   },
@@ -192,13 +244,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
   typeButton: {
     flex: 1,
@@ -216,30 +261,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  fileInfo: {
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+  },
+  fileCard: {
+    flexDirection: "row",
     backgroundColor: "#f5f5f5",
     padding: 15,
     borderRadius: 8,
     marginVertical: 10,
+    alignItems: "center",
   },
-  fileType: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 5,
-    color: "#444",
+  fileThumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 15,
+  },
+  fileInfo: {
+    flex: 1,
   },
   fileName: {
-    color: "#666",
     fontSize: 16,
+    fontWeight: "600",
     marginBottom: 5,
   },
-  fileDetails: {
+  fileCategory: {
+    fontSize: 14,
     color: "#666",
-    fontSize: 16,
+  },
+  fileDate: {
+    fontSize: 14,
+    color: "#666",
   },
   loader: {
     marginVertical: 20,
   },
+  fileList: {
+    paddingBottom: 20,
+  },
 });
 
-export default UploadFiles;
+export default HealthRecordsScreen;
