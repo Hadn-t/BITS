@@ -3,10 +3,11 @@ import { View, Text, Alert, TouchableOpacity, StyleSheet } from 'react-native';
 import Title from '@/common/Title';
 import Button from '@/common/Button';
 import Input from '@/common/Input';
-import { auth } from '../firbaseConfig';  // Import Firebase auth
+import { auth, firestore } from '../firbaseConfig';  // Import Firebase auth and Firestore
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { getDoc, doc } from 'firebase/firestore';  // Import Firestore functions to fetch the role
 
-const SignIn = ({ role, setAuth, setRole, navigation, setMode }) => {
+const SignIn = ({ setAuth, setRole, navigation, setMode }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
@@ -26,11 +27,28 @@ const SignIn = ({ role, setAuth, setRole, navigation, setMode }) => {
 
         // Firebase sign-in logic
         try {
-            await signInWithEmailAndPassword(auth,username, password);
-            setAuth(true);
-            setRole(role);
-            Alert.alert('Success', `${role.charAt(0).toUpperCase() + role.slice(1)} signed in successfully!`);
-            // navigation.navigate('Home');
+            const userCredential = await signInWithEmailAndPassword(auth, username, password);
+            const user = userCredential.user; // Get the user object from Firebase Auth
+
+            // Fetch the user's role from Firestore based on the email
+            const userRef = doc(firestore, 'users', user.uid); // Reference to the user's Firestore document
+            const docSnapshot = await getDoc(userRef);
+
+            if (docSnapshot.exists()) {
+                const userData = docSnapshot.data();
+                const userRole = userData.role; // Get the role from Firestore
+
+                // Set the role in state and navigate to the main screen
+                setAuth(true);
+                setRole(userRole); // Set the role fetched from Firestore
+                Alert.alert('Success', `Signed in successfully as ${userRole}!`);
+
+                // Navigate to the main screen
+                // navigation.navigate('Main');
+            } else {
+                // If no document found (error or data missing)
+                Alert.alert('Error', 'User data not found in Firestore.');
+            }
         } catch (error) {
             Alert.alert('Error', 'Invalid credentials. Please try again.');
         }
@@ -38,7 +56,7 @@ const SignIn = ({ role, setAuth, setRole, navigation, setMode }) => {
 
     return (
         <View style={styles.container}>
-            <Title text={`Sign In as ${role.charAt(0).toUpperCase() + role.slice(1)}`} />
+            <Title text={`Sign In`} />
 
             <Input
                 title="Email"

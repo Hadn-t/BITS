@@ -1,26 +1,57 @@
-import React, { useLayoutEffect } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, Text, View, SafeAreaView,Linking, Platform, StatusBar } from 'react-native';
+import React, { useLayoutEffect, useState, useEffect } from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, Text, View, SafeAreaView, Linking, Alert } from 'react-native';
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import {
-  faHome, faHospital, faFileAlt, faStethoscope, faCalendar, faUsers,
-  faCommentDots, faDashboard, faUser, faAmbulance, faHeart, faUserMd,
-  faPhone
-} from "@fortawesome/free-solid-svg-icons";
+import { faCalendar, faUser, faHeart, faUserMd, faStethoscope, faPhone } from "@fortawesome/free-solid-svg-icons";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { auth } from '../firbaseConfig';  // Your firebase configuration file
 
 const HomeScreen = ({ navigation, route }) => {
+  const [userName, setUserName] = useState('Doctor');  // Default name, will be replaced from Firestore
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
-    })
+    });
   }, [navigation]);
+
+  useEffect(() => {
+    // Fetch the user data from Firestore using the user UID
+    const fetchUserData = async () => {
+      try {
+        const db = getFirestore();
+        const userRef = doc(db, "users", auth.currentUser.uid);  // Assuming user info is stored in 'users' collection
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          // Check if firstName exists in the document
+          if (userData.firstName) {
+            setUserName(` ${userData.firstName}`);  // Assuming 'firstName' is stored in Firestore
+          } else {
+            setUserName('Client');  // Fallback name if firstName is not available
+          }
+        } else {
+          console.log("User data not found!");
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    // Fetch user data if user is logged in
+    if (auth.currentUser) {
+      fetchUserData();
+    }
+  }, []);
 
   // Navigate to Nearby Hospitals screen (SOS)
   const handleSOSNavigate = () => {
     navigation.navigate('Nearby Hospitals', { screen: 'NearbyHospitalsTab' });
   };
+
   const handleSOSCall = () => {
     const phoneNumber = 'tel:112'; // Replace with the actual emergency number
-    
+
     // Check if the device can handle the phone call URL
     Linking.canOpenURL(phoneNumber)
       .then((supported) => {
@@ -61,7 +92,8 @@ const HomeScreen = ({ navigation, route }) => {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <Text style={styles.welcomeText}>Welcome back,</Text>
-            <Text style={styles.headerText}>John Doe</Text>
+            {/* Ensure userName is rendered inside a Text component */}
+            <Text style={styles.headerText}>{userName}</Text>
           </View>
         </View>
 
@@ -75,32 +107,28 @@ const HomeScreen = ({ navigation, route }) => {
               onPress={handleAppointmentNavigate}
               color="#4A90E2"
             />
-
             <QuickActionCard
               icon={faUser}
               title="My Profile"
               onPress={handleProfileNavigate}
               color="#50C878"
             />
-
             <QuickActionCard
               icon={faHeart}
               title="Health Stats"
-              onPress={() => { }}
+              onPress={() => {}}
               color="#FF7F50"
             />
-
             <QuickActionCard
               icon={faUserMd}
               title="Find Doctor"
-              onPress={() => { }}
+              onPress={() => {}}
               color="#9B59B6"
             />
-
             <QuickActionCard
               icon={faStethoscope}
               title="Health Tips"
-              onPress={() => { }}
+              onPress={() => {}}
               color="#E67E22"
             />
           </View>
@@ -131,10 +159,8 @@ const HomeScreen = ({ navigation, route }) => {
       </ScrollView>
 
       {/* SOS Button */}
-
       <TouchableOpacity
-        style={[styles.sosButton,{marginTop: 10}]}
-        
+        style={[styles.sosButton, { marginTop: 10 }]}
         onPress={handleSOSCall}
         activeOpacity={0.8}
       >
@@ -148,6 +174,7 @@ const HomeScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+  // Same styles as before...
   safeArea: {
     flex: 1,
     backgroundColor: '#f5f5f5',

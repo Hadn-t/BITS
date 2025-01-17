@@ -5,6 +5,7 @@ import Button from '@/common/Button';
 import Input from '@/common/Input';
 import { auth } from '../firbaseConfig';  // Import Firebase auth
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { getFirestore, doc, setDoc } from 'firebase/firestore'; // Import Firestore functions
 
 const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
     const [username, setUsername] = useState('');
@@ -38,10 +39,28 @@ const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
 
         // Firebase sign-up logic
         try {
-            await createUserWithEmailAndPassword(auth,username, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, username, password);
+            const user = userCredential.user; // Get the user object from Firebase Auth
+
+            // Initialize Firestore
+            const db = getFirestore();
+            const userRef = doc(db, 'users', user.uid); // Firestore document reference (using user UID)
+
+            // Store user data in Firestore
+            await setDoc(userRef, {
+                username: username,
+                firstName: firstName,
+                lastName: lastName,
+                email: user.email, // Store the email from Firebase Auth
+                role: role, // Store the role (e.g., "client")
+            });
+
+            // Update the app's state and navigate to the main screen
             setAuth(true);
             setRole(role);
             Alert.alert('Success', `${role.charAt(0).toUpperCase() + role.slice(1)} signed up successfully!`);
+
+            // Optionally navigate to a different screen after sign-up
             // navigation.navigate('Home');
         } catch (error) {
             Alert.alert('Error', error.message);
