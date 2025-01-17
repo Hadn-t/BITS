@@ -113,7 +113,7 @@ const MainStack = ({ navigation, role, setAuth }) => {
       <Tab.Screen
         name="Profile"
         children={(props) => <ProfileScreen {...props} setAuth={setAuth} />}
-        initialParams={{ role }} // Or 'doctor' depending on the user's role
+        initialParams={{ role }}
         options={{
           tabBarIcon: ({ focused, color, size }) => (
             <FontAwesomeIcon icon={faUser} size={size} color={color} />

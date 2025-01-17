@@ -1,23 +1,12 @@
 import React, { useState } from "react";
-import React, { useState } from "react";
 import {
   View,
   Text,
   Alert,
-  Alert,
   StyleSheet,
   ActivityIndicator,
-  ActivityIndicator,
   TouchableOpacity,
-  Platform,
-} from "react-native";
-import * as DocumentPicker from "expo-document-picker";
-
-const DOCUMENT_TYPES = {
-  prescription: "Prescription",
-  lab_result: "Lab Result",
-};
-  Platform,
+  TextInput,
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 
@@ -26,10 +15,11 @@ const DOCUMENT_TYPES = {
   lab_result: "Lab Result",
 };
 
-const UploadFiles = () => {
+const HealthRecordsScreen = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState(null);
+  const [name, setName] = useState('');
 
   const pickDocument = async (documentType) => {
     try {
@@ -44,7 +34,6 @@ const UploadFiles = () => {
 
         setSelectedFile(asset);
         setSelectedDocType(documentType);
-        Alert.alert("Success", `Selected: ${asset.name}`);
       }
     } catch (error) {
       console.error("Error picking document:", error);
@@ -62,24 +51,27 @@ const UploadFiles = () => {
 
     try {
       const formData = new FormData();
+
+
       const fileToUpload = {
         uri: selectedFile.uri,
-        type: selectedFile.mimeType || "image/jpeg",
-        name: selectedFile.name,
+        type: selectedFile.mimeType || "application/octet-stream",
+        name: name.trim() || selectedFile.name,
       };
 
       formData.append("file", fileToUpload);
       formData.append("user_id", "user123");
       formData.append("category", selectedDocType);
+      formData.append("name", name)
 
-      const csrfToken = "YOUR_CSRF_TOKEN"; // Replace with the actual CSRF token
+      const csrfToken = "YOUR_CSRF_TOKEN";
 
-      const response = await fetch("http://192.168.1.2:5000/core/upload/", {
+      const response = await fetch("http://192.168.29.157:5000/core/upload/", {
         method: "POST",
         body: formData,
         headers: {
           Accept: "application/json",
-          "X-CSRFToken": csrfToken, // Include CSRF token here
+          "X-CSRFToken": csrfToken,
         },
       });
 
@@ -104,7 +96,7 @@ const UploadFiles = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Upload File</Text>
+      <Text style={styles.header}>Upload Files</Text>
 
       <View style={styles.mainContent}>
         <View style={styles.buttonContainer}>
@@ -125,65 +117,33 @@ const UploadFiles = () => {
 
         {selectedFile && (
           <View style={styles.fileInfo}>
-            <Text style={styles.fileType}>
-              Type: {DOCUMENT_TYPES[selectedDocType]}
-            </Text>
-            <Text style={styles.fileName} numberOfLines={1}>
-              File: {selectedFile.name}
-            </Text>
-            <Text style={styles.fileDetails}>
-              Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-            </Text>
-          </View>
-        )}
+            <TextInput
+              placeholder="Enter the File Name"
+              style={{
+                width: "100%",
+                borderRadius: 12,
+                height: 60,
+                borderColor: "teal",
+                borderWidth: 2,
+              }}
+              value = {name}
+              onChangeText={setName}
+            ></TextInput>
+            <View style = {{
+              paddingLeft:12,
+              marginTop:12,
+            }}>
+              <Text style={styles.fileType}>
+                Type: {DOCUMENT_TYPES[selectedDocType]}
+              </Text>
 
-        {selectedFile &&
-          (isLoading ? (
-            <ActivityIndicator
-              style={styles.loader}
-              color="#2196F3"
-              size="large"
-            />
-          ) : (
-            <TouchableOpacity
-              style={[styles.button, styles.uploadButton]}
-              onPress={uploadFile}
-            >
-              <Text style={styles.buttonText}>Upload</Text>
-            </TouchableOpacity>
-          ))}
-  return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Upload File</Text>
-
-      <View style={styles.mainContent}>
-        <View style={styles.buttonContainer}>
-          {Object.entries(DOCUMENT_TYPES).map(([key, value]) => (
-            <TouchableOpacity
-              key={key}
-              style={[
-                styles.button,
-                styles.typeButton,
-                selectedDocType === key && styles.selectedButton,
-              ]}
-              onPress={() => pickDocument(key)}
-            >
-              <Text style={styles.buttonText}>{value}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {selectedFile && (
-          <View style={styles.fileInfo}>
-            <Text style={styles.fileType}>
-              Type: {DOCUMENT_TYPES[selectedDocType]}
-            </Text>
-            <Text style={styles.fileName} numberOfLines={1}>
-              File: {selectedFile.name}
-            </Text>
-            <Text style={styles.fileDetails}>
-              Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-            </Text>
+              <Text style={styles.fileName} numberOfLines={1}>
+                File: {selectedFile.name}
+              </Text>
+              <Text style={styles.fileDetails}>
+                Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+              </Text>
+            </View>
           </View>
         )}
 
@@ -204,15 +164,12 @@ const UploadFiles = () => {
           ))}
       </View>
     </View>
-    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: "#fff",
     padding: 20,
     backgroundColor: "#fff",
   },
@@ -224,28 +181,12 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     gap: 20,
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 25,
-    color: "#333",
-  },
-  mainContent: {
-    gap: 20,
   },
   buttonContainer: {
     flexDirection: "row",
     gap: 15,
     marginBottom: 20,
-  buttonContainer: {
-    flexDirection: "row",
-    gap: 15,
-    marginBottom: 20,
   },
-  button: {
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
   button: {
     padding: 15,
     borderRadius: 8,
@@ -259,26 +200,11 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
-  typeButton: {
   typeButton: {
     flex: 1,
     backgroundColor: "#2196F3",
-    backgroundColor: "#2196F3",
   },
-  selectedButton: {
-    backgroundColor: "#1976D2",
-  },
-  uploadButton: {
-    backgroundColor: "#4CAF50",
-    marginTop: 10,
   selectedButton: {
     backgroundColor: "#1976D2",
   },
@@ -296,51 +222,25 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     marginVertical: 10,
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  fileInfo: {
-    backgroundColor: "#f5f5f5",
-    padding: 15,
-    borderRadius: 8,
-    marginVertical: 10,
   },
   fileType: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
     marginBottom: 5,
     color: "#444",
   },
   fileName: {
     color: "#666",
-  fileType: {
     fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 5,
-    color: "#444",
-  },
-  fileName: {
-    color: "#666",
-    fontSize: 14,
-    marginBottom: 5,
     marginBottom: 5,
   },
   fileDetails: {
     color: "#666",
-    fontSize: 14,
-  fileDetails: {
-    color: "#666",
-    fontSize: 14,
+    fontSize: 16,
   },
-  loader: {
-    marginVertical: 20,
   loader: {
     marginVertical: 20,
   },
 });
 
-export default UploadFiles;
-
-export default UploadFiles;
+export default HealthRecordsScreen;

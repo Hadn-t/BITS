@@ -14,6 +14,7 @@ def upload_file(request):
         user_id = request.POST.get('user_id')
         category = request.POST.get('category')
         file = request.FILES.get('file')
+        file_name = request.POST.get('name')
 
         if not user_id or not category or not file:
             return JsonResponse({"error": "Missing required fields"}, status=400)
@@ -23,16 +24,19 @@ def upload_file(request):
             user_id=user_id,
             category=category,
             file=file,
+            file_name = request.POST.get('name', 'default_file_name')
         )
         file_upload.save()  # Ensure saving the record
 
         return JsonResponse({"message": "File uploaded successfully"}, status=200)
     return JsonResponse({"error": "Invalid request method"}, status=405)
 
+
+
 @api_view(['GET'])
 def get_user_files(request, user_id):
     #Fetching files on the basis of uid
-    files= FileUpload.objects.filter(user_id=user_id)
+    files = FileUpload.objects.filter(user_id=user_id)
 
     #serilizing the query to send back to the client
     serializer = FileUploadSerializer(files, many=True)
