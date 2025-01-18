@@ -7,6 +7,10 @@ from .serializers import FileUploadSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
+from django.views import View
+from django.shortcuts import render
+
+
 
 @csrf_exempt  # Temporarily disable CSRF validation for testing
 def upload_file(request):
@@ -43,3 +47,9 @@ def get_user_files(request, user_id):
 
     #return the response as json (application/JSON)
     return JsonResponse({'files': serializer.data})
+
+
+
+class Index(View):
+    def get(self, request):
+        return render(request, 'doctors/index.html')
