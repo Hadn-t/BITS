@@ -12,8 +12,8 @@ import {
   faPhone,
   faPen
 } from "@fortawesome/free-solid-svg-icons";
-
-const ProfileScreen = ({ route, setAuth, navigation }) => {
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebaseConfig'; const ProfileScreen = ({ route, setAuth, navigation }) => {
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -25,10 +25,19 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
 
   const handleEditProfile = () => {
     console.log('Edit Profile Button Pressed');
+   
   };
 
   const handleLogout = () => {
-    setAuth(false);
+    signOut(auth)
+      .then(() => {
+        setAuth(false); 
+      
+      })
+      .catch((error) => {
+        console.error("Logout Error: ", error);
+        alert('Error logging out, please try again.');
+      });
   };
 
   const DoctorProfile = () => (

@@ -4,44 +4,22 @@ import Title from '@/common/Title';
 import Button from '@/common/Button';
 import SignUp from '@/common/SignUp'; 
 import SignIn from '@/common/SignIn'; 
-import { auth } from '../firbaseConfig';  // Import Firebase auth for sign-in/sign-up functionality
 
 const Authentication = ({ setAuth, setRole, navigation }) => {
-  const [mode, setMode] = useState('signIn');  // Default mode is 'signIn'
-  const [role, setRoleState] = useState('client');  // Default role is 'client'
+  const [mode, setMode] = useState('signIn'); 
+  const [role, setRoleState] = useState('');  
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerShown: false,  // Hide header
-    });
-  }, [navigation]);
-
-  const handleSignIn = async (email, password) => {
-    try {
-      await auth().signInWithEmailAndPassword(email, password);
-      setAuth(true);
-      setRole(role);  // Set role here after sign-in
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    }
-  };
-
-  const handleSignUp = async (email, password) => {
-    try {
-      await auth().createUserWithEmailAndPassword(email, password);
-      setAuth(true);
-      setRole(role);  // Set role after sign-up
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    }
-  };
+      headerShown: false, 
+    });     }, [navigation]);
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 16 }}>
         <Title text="Authentication" />
 
-        {mode === 'signUp' && (  // Only show the role selection buttons when in SignUp mode
+        {mode === 'signUp' && (  
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap', width: '100%' }}>
             <Button
               title="Client"
@@ -59,11 +37,11 @@ const Authentication = ({ setAuth, setRole, navigation }) => {
         )}
 
         {mode === 'signIn' && (
-          <SignIn role={role} setAuth={setAuth} setRole={setRole} navigation={navigation} setMode={setMode} handleSignIn={handleSignIn} />
+          <SignIn role={role} setAuth={setAuth} setRole={setRole} navigation={navigation} setMode={setMode}/>
         )}
 
         {mode === 'signUp' && (
-          <SignUp role={role} setAuth={setAuth} setRole={setRole} navigation={navigation} setMode={setMode} handleSignUp={handleSignUp} />
+          <SignUp role={role} setAuth={setAuth} setRole={setRole} navigation={navigation} setMode={setMode} />
         )}
       </View>
     </SafeAreaView>
