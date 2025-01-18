@@ -3,11 +3,10 @@ import { ScrollView, StyleSheet, TouchableOpacity, Text, View, SafeAreaView, Lin
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faCalendar, faUser, faHeart, faUserMd, faStethoscope, faPhone } from "@fortawesome/free-solid-svg-icons";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { auth } from '../firbaseConfig';  // Your firebase configuration file
+import { auth } from '../firebaseConfig'; 
 
 const HomeScreen = ({ navigation, route }) => {
-  const [userName, setUserName] = useState('Doctor');  // Default name, will be replaced from Firestore
-
+  const [userName, setUserName] = useState('Client'); 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
@@ -15,20 +14,20 @@ const HomeScreen = ({ navigation, route }) => {
   }, [navigation]);
 
   useEffect(() => {
-    // Fetch the user data from Firestore using the user UID
+  
     const fetchUserData = async () => {
       try {
         const db = getFirestore();
-        const userRef = doc(db, "users", auth.currentUser.uid);  // Assuming user info is stored in 'users' collection
+        const userRef = doc(db, "users", auth.currentUser.uid);  
         const userDoc = await getDoc(userRef);
 
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          // Check if firstName exists in the document
-          if (userData.firstName) {
-            setUserName(` ${userData.firstName}`);  // Assuming 'firstName' is stored in Firestore
+         
+          if (userData.firstname) {
+            setUserName(` ${userData.firstname}`);  
           } else {
-            setUserName('Client');  // Fallback name if firstName is not available
+            setUserName('Client');  
           }
         } else {
           console.log("User data not found!");
@@ -38,25 +37,24 @@ const HomeScreen = ({ navigation, route }) => {
       }
     };
 
-    // Fetch user data if user is logged in
+   
     if (auth.currentUser) {
       fetchUserData();
     }
   }, []);
 
-  // Navigate to Nearby Hospitals screen (SOS)
+ 
   const handleSOSNavigate = () => {
     navigation.navigate('Nearby Hospitals', { screen: 'NearbyHospitalsTab' });
   };
 
   const handleSOSCall = () => {
-    const phoneNumber = 'tel:112'; // Replace with the actual emergency number
+    const phoneNumber = 'tel:112';
 
-    // Check if the device can handle the phone call URL
     Linking.canOpenURL(phoneNumber)
       .then((supported) => {
         if (supported) {
-          Linking.openURL(phoneNumber); // This will open the dialer with the phone number pre-filled
+          Linking.openURL(phoneNumber); 
         } else {
           Alert.alert('Error', 'Unable to make a phone call at this time.');
         }
@@ -92,7 +90,6 @@ const HomeScreen = ({ navigation, route }) => {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <Text style={styles.welcomeText}>Welcome back,</Text>
-            {/* Ensure userName is rendered inside a Text component */}
             <Text style={styles.headerText}>{userName}</Text>
           </View>
         </View>

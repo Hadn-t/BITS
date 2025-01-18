@@ -9,6 +9,7 @@ import {
   TextInput,
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
+import { auth } from '../firebaseConfig';
 
 const DOCUMENT_TYPES = {
   prescription: "Prescription",
@@ -47,11 +48,18 @@ const HealthRecordsScreen = () => {
       return;
     }
 
+    if (!auth.currentUser) {
+      Alert.alert("Error", "Please login first.");
+      return;
+    }
+
+    const userId = auth.currentUser.uid;
+    console.log("Uploading file for user:", userId);
+
     setIsLoading(true);
 
     try {
       const formData = new FormData();
-
 
       const fileToUpload = {
         uri: selectedFile.uri,
@@ -60,9 +68,9 @@ const HealthRecordsScreen = () => {
       };
 
       formData.append("file", fileToUpload);
-      formData.append("user_id", "user123");
+      formData.append("user_id", userId);
       formData.append("category", selectedDocType);
-      formData.append("name", name)
+      formData.append("name", name);
 
       const csrfToken = "YOUR_CSRF_TOKEN";
 
@@ -80,13 +88,16 @@ const HealthRecordsScreen = () => {
       }
 
       const responseText = await response.text();
+      console.log("Upload successful for user:", userId);
       Alert.alert("Success", "File uploaded successfully!");
       setSelectedFile(null);
       setSelectedDocType(null);
+      setName('');
     } catch (error) {
       console.error("Full error details:", {
         message: error.message,
         stack: error.stack,
+        userId: auth.currentUser?.uid
       });
       Alert.alert("Error", `Upload failed: ${error.message}`);
     } finally {
@@ -119,20 +130,11 @@ const HealthRecordsScreen = () => {
           <View style={styles.fileInfo}>
             <TextInput
               placeholder="Enter the File Name"
-              style={{
-                width: "100%",
-                borderRadius: 12,
-                height: 60,
-                borderColor: "teal",
-                borderWidth: 2,
-              }}
-              value = {name}
+              style={styles.fileNameInput}
+              value={name}
               onChangeText={setName}
-            ></TextInput>
-            <View style = {{
-              paddingLeft:12,
-              marginTop:12,
-            }}>
+            />
+            <View style={styles.fileDetailsContainer}>
               <Text style={styles.fileType}>
                 Type: {DOCUMENT_TYPES[selectedDocType]}
               </Text>
@@ -223,6 +225,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginVertical: 10,
   },
+  fileNameInput: {
+    width: "100%",
+    borderRadius: 12,
+    height: 60,
+    borderColor: "teal",
+    borderWidth: 2,
+    paddingHorizontal: 10,
+    backgroundColor: "#fff",
+  },
+  fileDetailsContainer: {
+    paddingLeft: 12,
+    marginTop: 12,
+  },
   fileType: {
     fontSize: 18,
     fontWeight: "600",
@@ -237,6 +252,7 @@ const styles = StyleSheet.create({
   fileDetails: {
     color: "#666",
     fontSize: 16,
+    marginBottom: 5,
   },
   loader: {
     marginVertical: 20,

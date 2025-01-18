@@ -1,4 +1,4 @@
-import React, { useLayoutEffect } from 'react';
+import React, { useLayoutEffect, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,14 +11,48 @@ import {
   StatusBar
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { auth } from '../firebaseConfig'; 
 
 const Dashboard = ({ navigation }) => {
+  const [userName, setUserName] = useState('Doctor');
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
     });
   });
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const db = getFirestore();
+        const userRef = doc(db, "users", auth.currentUser.uid);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.firstname) {
+            setUserName(userData.firstname);
+          } else {
+            setUserName('Doctor');
+          }
+        } else {
+          console.log("User data not found!");
+          setUserName('Doctor');
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        setUserName('Doctor');
+      }
+    };
+
+    if (auth.currentUser) {
+      fetchUserData();
+    } else {
+      setUserName('Doctor');
+    }
+  }, []);
   const appointments = [
     { time: '09:00 AM', patient: 'Sarah Johnson', type: 'Check-up', status: 'Confirmed' },
     { time: '10:30 AM', patient: 'Mike Peters', type: 'Follow-up', status: 'In Progress' },
@@ -91,9 +125,9 @@ const Dashboard = ({ navigation }) => {
       <StatusBar hidden />
       {/* Header */}
       <View style={styles.header}>
-        <View>
+      <View>
           <Text style={styles.welcomeText}>Welcome back,</Text>
-          <Text style={styles.doctorName}>Dr. Smith</Text>
+          <Text style={styles.doctorName}>Dr. {userName}</Text>
         </View>
         <TouchableOpacity
           style={styles.notificationButton}

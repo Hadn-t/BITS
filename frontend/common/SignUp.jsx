@@ -3,9 +3,9 @@ import { View, Text, Alert, TouchableOpacity, StyleSheet } from 'react-native';
 import Title from '@/common/Title';
 import Button from '@/common/Button';
 import Input from '@/common/Input';
-import { auth } from '../firbaseConfig';  // Import Firebase auth
+import { auth, db } from '../firebaseConfig'; 
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, doc, setDoc } from 'firebase/firestore'; // Import Firestore functions
+import { doc, setDoc } from 'firebase/firestore';
 
 const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
     const [username, setUsername] = useState('');
@@ -13,63 +13,125 @@ const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
     const [lastName, setLastName] = useState('');
     const [password, setPassword] = useState('');
     const [rePassword, setRePassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const [usernameError, setUsernameError] = useState('');
     const [firstNameError, setFirstNameError] = useState('');
     const [lastNameError, setLastNameError] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [rePasswordError, setRePasswordError] = useState('');
+    const [roleError, setRoleError] = useState('');
 
-    const onSignUp = async () => {
-        const faultUsername = !username || username.length < 5;
-        const faultFirstName = !firstName;
-        const faultLastName = !lastName;
-        const faultPassword = !password || password.length < 6;
-        const faultRePassword = rePassword !== password;
+    const validateInputs = () => {
+        let isValid = true;
 
-        faultUsername && setUsernameError('Username must be at least 5 characters');
-        faultFirstName && setFirstNameError('First Name is required');
-        faultLastName && setLastNameError('Last Name is required');
-        faultPassword && setPasswordError('Password must be at least 6 characters');
-        faultRePassword && setRePasswordError('Passwords do not match');
-
-        if (faultUsername || faultFirstName || faultLastName || faultPassword || faultRePassword) {
-            return;
+        // Role validation
+        if (!role) {
+            setRoleError('Please select a role');
+            isValid = false;
         }
 
-        // Firebase sign-up logic
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, username, password);
-            const user = userCredential.user; // Get the user object from Firebase Auth
+        // Email validation
+        if (!username) {
+            setUsernameError('Email is required');
+            isValid = false;
+        } else if (!/\S+@\S+\.\S+/.test(username)) {
+            setUsernameError('Please enter a valid email');
+            isValid = false;
+        }
 
-            // Initialize Firestore
-            const db = getFirestore();
-            const userRef = doc(db, 'users', user.uid); // Firestore document reference (using user UID)
+        // First name validation
+        if (!firstName) {
+            setFirstNameError('First Name is required');
+            isValid = false;
+        }
+
+        // Last name validation
+        if (!lastName) {
+            setLastNameError('Last Name is required');
+            isValid = false;
+        }
+
+        // Password validation
+        if (!password) {
+            setPasswordError('Password is required');
+            isValid = false;
+        } else if (password.length < 6) {
+            setPasswordError('Password must be at least 6 characters');
+            isValid = false;
+        }
+
+        // Confirm password validation
+        if (password !== rePassword) {
+            setRePasswordError('Passwords do not match');
+            isValid = false;
+        }
+
+        return isValid;
+    };
+
+    const onSignUp = async () => {
+        try {
+            if (!validateInputs()) {
+                return;
+            }
+
+            // Role check before proceeding
+            if (!role) {
+                Alert.alert('Error', 'Please select a role before signing up');
+                return;
+            }
+
+            setLoading(true);
+
+            const userCredential = await createUserWithEmailAndPassword(auth, username, password);
+            const user = userCredential.user;
+
+            const userRef = doc(db, 'users', user.uid);
 
             // Store user data in Firestore
             await setDoc(userRef, {
                 username: username,
-                firstName: firstName,
-                lastName: lastName,
-                email: user.email, // Store the email from Firebase Auth
-                role: role, // Store the role (e.g., "client")
+                firstname: firstName, // Changed to match the field name used in SignIn
+                lastname: lastName,
+                email: user.email,
+                role: role,
+                createdAt: new Date().toISOString(),
             });
 
-            // Update the app's state and navigate to the main screen
             setAuth(true);
             setRole(role);
-            Alert.alert('Success', `${role.charAt(0).toUpperCase() + role.slice(1)} signed up successfully!`);
+            Alert.alert(
+                'Success', 
+                `Signed up successfully as ${role}!\nWelcome ${firstName}`
+            );
 
-            // Optionally navigate to a different screen after sign-up
-            // navigation.navigate('Home');
         } catch (error) {
-            Alert.alert('Error', error.message);
+            console.error('Sign up error:', error);
+            
+            const errorMessages = {
+                'auth/email-already-in-use': 'This email is already registered.',
+                'auth/invalid-email': 'The email address is badly formatted.',
+                'auth/operation-not-allowed': 'Email/password accounts are not enabled.',
+                'auth/weak-password': 'The password is too weak.',
+                'auth/network-request-failed': 'Network error. Please check your connection.'
+            };
+
+            const errorMessage = errorMessages[error.code] || error.message || 'An error occurred during sign up.';
+            Alert.alert('Error', errorMessage);
+
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <View style={styles.container}>
-            <Title text={`Sign Up as ${role.charAt(0).toUpperCase() + role.slice(1)}`} />
+            <Title text={role ? `Sign Up as ${role.charAt(0).toUpperCase() + role.slice(1)}` : 'Sign Up'} />
+
+            {!role && (
+                <Text style={styles.errorText}>{roleError}</Text>
+            )}
 
             <Input
                 title="Email"
@@ -78,7 +140,10 @@ const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
                 hidden={false}
                 value={username}
                 error={usernameError}
-                setValue={setUsername}
+                setValue={(text) => {
+                    setUsername(text);
+                    setUsernameError('');
+                }}
                 setError={setUsernameError}
             />
             <Input
@@ -88,7 +153,10 @@ const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
                 hidden={false}
                 value={firstName}
                 error={firstNameError}
-                setValue={setFirstName}
+                setValue={(text) => {
+                    setFirstName(text);
+                    setFirstNameError('');
+                }}
                 setError={setFirstNameError}
             />
             <Input
@@ -98,7 +166,10 @@ const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
                 hidden={false}
                 value={lastName}
                 error={lastNameError}
-                setValue={setLastName}
+                setValue={(text) => {
+                    setLastName(text);
+                    setLastNameError('');
+                }}
                 setError={setLastNameError}
             />
             <Input
@@ -108,7 +179,10 @@ const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
                 hidden={true}
                 value={password}
                 error={passwordError}
-                setValue={setPassword}
+                setValue={(text) => {
+                    setPassword(text);
+                    setPasswordError('');
+                }}
                 setError={setPasswordError}
             />
             <Input
@@ -118,16 +192,26 @@ const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
                 hidden={true}
                 value={rePassword}
                 error={rePasswordError}
-                setValue={setRePassword}
+                setValue={(text) => {
+                    setRePassword(text);
+                    setRePasswordError('');
+                }}
                 setError={setRePasswordError}
             />
 
-            <Button title="Sign Up" fn={onSignUp} />
+            <Button 
+                title={loading ? "Signing Up..." : "Sign Up"} 
+                fn={onSignUp}
+                disabled={loading || !role}
+            />
 
             <View style={styles.switchContainer}>
                 <Text style={styles.switchText}>
                     Already have an account?
-                    <TouchableOpacity onPress={() => setMode('signIn')}>
+                    <TouchableOpacity 
+                        onPress={() => setMode('signIn')}
+                        disabled={loading}
+                    >
                         <Text style={styles.linkText}> Sign In</Text>
                     </TouchableOpacity>
                 </Text>
@@ -136,7 +220,6 @@ const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
     );
 };
 
-// Styles
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: 16,
@@ -155,6 +238,11 @@ const styles = StyleSheet.create({
     linkText: {
         color: '#007BFF',
         textDecorationLine: 'underline',
+    },
+    errorText: {
+        color: 'red',
+        textAlign: 'center',
+        marginBottom: 10,
     },
 });
 
