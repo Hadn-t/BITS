@@ -1,12 +1,29 @@
 import React, { useLayoutEffect, useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, Text, View, SafeAreaView, Linking, Alert } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, Text, View, SafeAreaView, TextInput, Image, Linking, Alert } from 'react-native';
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { faCalendar, faUser, faHeart, faUserMd, faStethoscope, faPhone } from "@fortawesome/free-solid-svg-icons";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { auth } from '../firebaseConfig'; 
+import { 
+  faBell, 
+  faPhone, 
+  faTooth, 
+  faHeart, 
+  faLungs, 
+  faUserMd, 
+  faBrain, 
+  faStomach,
+  faFlask,
+  faSyringe,
+  faDiagnoses
+} from "@fortawesome/free-solid-svg-icons";
+import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { auth } from '../firebaseConfig';
+import { faAirbnb } from '@fortawesome/free-brands-svg-icons';
 
-const HomeScreen = ({ navigation, route }) => {
-  const [userName, setUserName] = useState('Client'); 
+const HomeScreen = ({ navigation }) => {
+  const [userName, setUserName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [medicalCenters, setMedicalCenters] = useState([]);
+  const [hasNotifications, setHasNotifications] = useState(false);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
@@ -14,156 +31,224 @@ const HomeScreen = ({ navigation, route }) => {
   }, [navigation]);
 
   useEffect(() => {
-  
-    const fetchUserData = async () => {
-      try {
-        const db = getFirestore();
-        const userRef = doc(db, "users", auth.currentUser.uid);  
-        const userDoc = await getDoc(userRef);
-
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-         
-          if (userData.firstname) {
-            setUserName(` ${userData.firstname}`);  
-          } else {
-            setUserName('Client');  
-          }
-        } else {
-          console.log("User data not found!");
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    };
-
-   
-    if (auth.currentUser) {
-      fetchUserData();
-    }
+    fetchUserData();
+    fetchMedicalCenters();
+    checkNotifications();
   }, []);
 
- 
-  const handleSOSNavigate = () => {
-    navigation.navigate('Nearby Hospitals', { screen: 'NearbyHospitalsTab' });
+  const fetchUserData = async () => {
+    try {
+      const db = getFirestore();
+      const userRef = doc(db, "users", auth.currentUser?.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setUserName(userData.firstname || 'User');
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
+
+  const fetchMedicalCenters = async () => {
+    try {
+      const db = getFirestore();
+      const centersRef = collection(db, "medicalCenters");
+      const q = query(centersRef, where("active", "==", true));
+      const querySnapshot = await getDocs(q);
+      
+      const centers = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      setMedicalCenters(centers);
+    } catch (error) {
+      console.error("Error fetching medical centers:", error);
+    }
+  };
+
+  const checkNotifications = async () => {
+    try {
+      const db = getFirestore();
+      const notificationsRef = collection(db, "notifications");
+      const q = query(notificationsRef, 
+        where("userId", "==", auth.currentUser?.uid),
+        where("read", "==", false)
+      );
+      const querySnapshot = await getDocs(q);
+      setHasNotifications(!querySnapshot.empty);
+    } catch (error) {
+      console.error("Error checking notifications:", error);
+    }
   };
 
   const handleSOSCall = () => {
-    const phoneNumber = 'tel:112';
-
-    Linking.canOpenURL(phoneNumber)
-      .then((supported) => {
-        if (supported) {
-          Linking.openURL(phoneNumber); 
-        } else {
-          Alert.alert('Error', 'Unable to make a phone call at this time.');
+    Alert.alert(
+      "Emergency Call",
+      "Are you sure you want to make an emergency call?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Call",
+          onPress: () => {
+            const phoneNumber = 'tel:112';
+            Linking.canOpenURL(phoneNumber)
+              .then((supported) => {
+                if (supported) {
+                  Linking.openURL(phoneNumber);
+                } else {
+                  Alert.alert('Error', 'Unable to make a phone call at this time.');
+                }
+              })
+              .catch((error) => {
+                console.error('Error opening URL:', error);
+                Alert.alert('Error', 'Something went wrong. Please try again.');
+              });
+          }
         }
-      })
-      .catch((error) => {
-        console.error('Error opening URL:', error);
-        Alert.alert('Error', 'Something went wrong. Please try again.');
-      });
+      ]
+    );
   };
 
-  const handleProfileNavigate = () => {
-    navigation.navigate('Profile', { role: 'client' });
+  const handleSearch = (text) => {
+    setSearchQuery(text);
+    // Implement search functionality here
   };
 
-  const handleAppointmentNavigate = () => {
-    navigation.navigate('Appointments');
+  const handleCategoryPress = (category) => {
+    navigation.navigate('CategoryDetails', { category });
   };
 
-  const QuickActionCard = ({ icon, title, onPress, color = '#007BFF' }) => (
-    <TouchableOpacity
-      style={[styles.card, { backgroundColor: color }]}
-      onPress={onPress}
-      activeOpacity={0.7}
+  const handleMedicalCenterPress = (center) => {
+    navigation.navigate('Nearby Hospitals', { center });
+  };
+
+  const handleNotificationsPress = () => {
+    navigation.navigate('Notifications');
+  };
+
+  const categories = [
+    { id: 1, title: "Dentistry", icon: faTooth },
+    { id: 2, title: "Cardiology", icon: faHeart },
+    { id: 3, title: "Pulmonology", icon: faLungs },
+    { id: 4, title: "General", icon: faUserMd },
+    { id: 5, title: "Neurology", icon: faBrain },
+    { id: 6, title: "Gastroenterology", icon: faDiagnoses },
+    { id: 7, title: "Laboratory", icon: faFlask },
+    { id: 8, title: "Vaccination", icon: faSyringe },
+  ];
+
+  const CategoryItem = ({ icon, title }) => (
+    <TouchableOpacity 
+      style={styles.categoryItem}
+      onPress={() => handleCategoryPress(title)}
     >
-      <FontAwesomeIcon icon={icon} size={32} color="#fff" />
-      <Text style={styles.cardText}>{title}</Text>
+      <View style={styles.categoryIcon}>
+        <FontAwesomeIcon icon={icon} size={24} color="#4A8B94" />
+      </View>
+      <Text style={styles.categoryTitle}>{title}</Text>
     </TouchableOpacity>
+  );
+  const MedicalCenter = ({ image, name }) => (
+    <View style={styles.medicalCenter}>
+      <Image source={image} style={styles.medicalImage} />
+      <Text style={styles.medicalName}>{name}</Text>
+    </View>
   );
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Location Header */}
         <View style={styles.header}>
-          <View style={styles.headerContent}>
+          <View style={styles.locationContainer}>
             <Text style={styles.welcomeText}>Welcome back,</Text>
-            <Text style={styles.headerText}>{userName}</Text>
+            <Text style={styles.userName}>{userName}</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.notificationButton}
+            onPress={handleNotificationsPress}
+          >
+            <FontAwesomeIcon icon={faBell} size={20} color="#333" />
+            {hasNotifications && <View style={styles.notificationBadge} />}
+          </TouchableOpacity>
+        </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search doctor..."
+            placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={handleSearch}
+          />
+        </View>
+
+        {/* Banner */}
+        <View style={styles.bannerContainer}>
+          <View style={styles.bannerContent}>
+            <View>
+              <Text style={styles.bannerTitle}>Looking for{'\n'}Specialist Doctors?</Text>
+              <Text style={styles.bannerSubtitle}>Schedule an appointment with{'\n'}our top doctors.</Text>
+            </View>
+          </View>
+          <View style={styles.bannerDots}>
+            <View style={[styles.dot, styles.activeDot]} />
+            <View style={styles.dot} />
+            <View style={styles.dot} />
           </View>
         </View>
 
-        <View style={styles.mainContent}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-
-          <View style={styles.cardContainer}>
-            <QuickActionCard
-              icon={faCalendar}
-              title="Appointments"
-              onPress={handleAppointmentNavigate}
-              color="#4A90E2"
-            />
-            <QuickActionCard
-              icon={faUser}
-              title="My Profile"
-              onPress={handleProfileNavigate}
-              color="#50C878"
-            />
-            <QuickActionCard
-              icon={faHeart}
-              title="Health Stats"
-              onPress={() => {}}
-              color="#FF7F50"
-            />
-            <QuickActionCard
-              icon={faUserMd}
-              title="Find Doctor"
-              onPress={() => {}}
-              color="#9B59B6"
-            />
-            <QuickActionCard
-              icon={faStethoscope}
-              title="Health Tips"
-              onPress={() => {}}
-              color="#E67E22"
-            />
+        {/* Categories */}
+        <View style={styles.categoriesSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Categories</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Categories')}>
+              <Text style={styles.seeAllButton}>See All</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.categoriesGrid}>
+            {categories.map((category) => (
+              <CategoryItem 
+                key={category.id}
+                icon={category.icon}
+                title={category.title}
+              />
+            ))}
           </View>
         </View>
 
-        {/* Health Statistics Summary */}
-        <View style={styles.statsContainer}>
-          <Text style={styles.sectionTitle}>Health Overview</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>120/80</Text>
-              <Text style={styles.statLabel}>Blood Pressure</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>72</Text>
-              <Text style={styles.statLabel}>Heart Rate</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={styles.statNumber}>98%</Text>
-              <Text style={styles.statLabel}>Oxygen</Text>
-            </View>
+          {/* Nearby Medical Centers */}
+          <View style={styles.medicalCentersSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Nearby Medical Centers</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllButton}>See All</Text>
+            </TouchableOpacity>
           </View>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Your Health, Our Priority</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.medicalCentersList}>
+            <MedicalCenter name="Sunrise Health Clinic" />
+            <MedicalCenter name="Golden Cardiology Center" />
+          </ScrollView>
         </View>
       </ScrollView>
 
-      {/* SOS Button */}
+
+      {/* Emergency Call Button */}
       <TouchableOpacity
-        style={[styles.sosButton, { marginTop: 10 }]}
+        style={styles.emergencyButton}
         onPress={handleSOSCall}
         activeOpacity={0.8}
       >
-        <View style={styles.sosContent}>
+        <View style={styles.emergencyContent}>
           <FontAwesomeIcon icon={faPhone} size={20} color="#fff" />
-          <Text style={styles.sosButtonText}>Call Ambulance</Text>
+          <Text style={styles.emergencyButtonText}>Emergency Call</Text>
         </View>
       </TouchableOpacity>
     </SafeAreaView>
@@ -171,118 +256,170 @@ const HomeScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  // Same styles as before...
   safeArea: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FFFFFF',
   },
   container: {
     flex: 1,
   },
   header: {
-    backgroundColor: '#007BFF',
-    padding: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    marginBottom: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
-  headerContent: {
-    paddingTop: 10,
-    paddingBottom: 10,
+  locationContainer: {
+    flex: 1,
   },
   welcomeText: {
-    color: '#E0E0E0',
-    fontSize: 16,
+    fontSize: 14,
+    color: '#666',
   },
-  headerText: {
-    color: '#fff',
-    fontSize: 28,
-    fontWeight: '700',
+  userName: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
     marginTop: 4,
   },
-  mainContent: {
+  notificationButton: {
+    padding: 8,
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    right: 6,
+    top: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#e74c3c',
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    marginTop: 16,
+  },
+  searchInput: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 16,
+  },
+  bannerContainer: {
+    margin: 16,
+    backgroundColor: '#4A8B94',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  bannerContent: {
+    padding: 24,
+    flexDirection: 'row',
+  },
+  bannerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  bannerSubtitle: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    opacity: 0.8,
+  },
+  bannerDots: {
+    flexDirection: 'row',
     padding: 16,
+    justifyContent: 'center',
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
+    opacity: 0.5,
+    marginHorizontal: 4,
+  },
+  activeDot: {
+    opacity: 1,
+  },
+  categoriesSection: {
+    padding: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    marginBottom: 16,
-    color: '#333',
-    paddingHorizontal: 4,
   },
-  cardContainer: {
+  seeAllButton: {
+    color: '#666',
+    fontSize: 14,
+  },
+  categoriesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  card: {
-    width: '48%',
-    marginBottom: 16,
-    borderRadius: 16,
-    padding: 20,
+  categoryItem: {
+    width: '23%',
     alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    marginBottom: 16,
   },
-  cardText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 12,
+  categoryIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  categoryTitle: {
+    fontSize: 12,
     textAlign: 'center',
   },
-  statsContainer: {
+  medicalCentersSection: {
     padding: 16,
+    marginBottom: 80,
   },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
+  medicalCentersList: {
+    marginTop: 16,
   },
-  statCard: {
+  medicalCenter: {
+    width: 280,
+    marginRight: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    width: '31%',
-    alignItems: 'center',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 2,
   },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#007BFF',
+  medicalImage: {
+    width: '100%',
+    height: 160,
+    backgroundColor: '#F0F0F0',
+  },
+  medicalInfo: {
+    padding: 12,
+  },
+  medicalName: {
+    fontSize: 16,
+    fontWeight: '500',
     marginBottom: 4,
   },
-  statLabel: {
+  medicalAddress: {
     fontSize: 12,
     color: '#666',
-    textAlign: 'center',
   },
-  footer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  footerText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  sosButton: {
+  emergencyButton: {
     position: 'absolute',
     bottom: 20,
     alignSelf: 'center',
@@ -294,13 +431,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
   },
-  sosContent: {
+  emergencyContent: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 24,
   },
-  sosButtonText: {
+  emergencyButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
