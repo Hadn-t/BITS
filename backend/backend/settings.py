@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'core.apps.CoreConfig',
+    'doctor_regis.apps.DoctorRegisConfig',
 
 ]
 
