@@ -3,53 +3,108 @@ import { View, Text, Alert, TouchableOpacity, StyleSheet } from 'react-native';
 import Title from '@/common/Title';
 import Button from '@/common/Button';
 import Input from '@/common/Input';
-import { auth } from '../firbaseConfig';  // Import Firebase auth
 import { signInWithEmailAndPassword } from 'firebase/auth';
-
-const SignIn = ({ role, setAuth, setRole, navigation, setMode }) => {
+import { getDoc, doc } from 'firebase/firestore';
+import { auth, db } from '../firebaseConfig'; 
+const SignIn = ({ setAuth, setRole, navigation, setMode }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-
     const [usernameError, setUsernameError] = useState('');
     const [passwordError, setPasswordError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const onSignIn = async () => {
-        const faultUsername = !username;
-        const faultPassword = !password;
-
-        faultUsername && setUsernameError('Username is required');
-        faultPassword && setPasswordError('Password is required');
-
-        if (faultUsername || faultPassword) {
-            return;
+    const validateInputs = () => {
+        let isValid = true;
+        
+        if (!username) {
+            setUsernameError('Username is required');
+            isValid = false;
+        } else if (!/\S+@\S+\.\S+/.test(username)) {
+            setUsernameError('Please enter a valid email');
+            isValid = false;
+        }
+        
+        if (!password) {
+            setPasswordError('Password is required');
+            isValid = false;
         }
 
-        // Firebase sign-in logic
+        return isValid;
+    };
+
+    const onSignIn = async () => {
         try {
-            await signInWithEmailAndPassword(auth,username, password);
+            if (!validateInputs()) {
+                return;
+            }
+
+            setLoading(true);
+
+           
+            const userCredential = await signInWithEmailAndPassword(auth, username, password);
+            const user = userCredential.user;
+
+            if (!user?.uid) {
+                throw new Error('User UID is missing.');
+            }
+
+           
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDocSnap = await getDoc(userDocRef);
+
+            if (!userDocSnap.exists()) {
+                throw new Error('User data not found in Firestore.');
+            }
+
+            const userData = userDocSnap.data();
+            
+           
             setAuth(true);
-            setRole(role);
-            Alert.alert('Success', `${role.charAt(0).toUpperCase() + role.slice(1)} signed in successfully!`);
-            // navigation.navigate('Home');
+            setRole(userData.role);
+
+            Alert.alert(
+                'Success', 
+                `Signed in successfully as ${userData.role}!\nWelcome ${userData.firstname}`
+            );
+
+
         } catch (error) {
-            Alert.alert('Error', 'Invalid credentials. Please try again.');
+            console.error('Sign in error:', error);
+            
+            const errorMessages = {
+                'auth/invalid-email': 'The email address is badly formatted.',
+                'auth/user-not-found': 'No user found with this email address.',
+                'auth/wrong-password': 'The password is incorrect.',
+                'auth/too-many-requests': 'Too many failed attempts. Please try again later.',
+                'auth/network-request-failed': 'Network error. Please check your connection.'
+            };
+
+            const errorMessage = errorMessages[error.code] || error.message || 'An error occurred during sign in.';
+            Alert.alert('Error', errorMessage);
+
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <View style={styles.container}>
-            <Title text={`Sign In as ${role.charAt(0).toUpperCase() + role.slice(1)}`} />
+            <Title text="Sign In" />
 
             <Input
                 title="Email"
                 inTitle="abc@hadnt.com"
-                type='email-address'
+                type="email-address"
                 hidden={false}
                 value={username}
                 error={usernameError}
-                setValue={setUsername}
+                setValue={(text) => {
+                    setUsername(text);
+                    setUsernameError('');
+                }}
                 setError={setUsernameError}
             />
+
             <Input
                 title="Password"
                 inTitle="********"
@@ -57,16 +112,26 @@ const SignIn = ({ role, setAuth, setRole, navigation, setMode }) => {
                 hidden={true}
                 value={password}
                 error={passwordError}
-                setValue={setPassword}
+                setValue={(text) => {
+                    setPassword(text);
+                    setPasswordError('');
+                }}
                 setError={setPasswordError}
             />
 
-            <Button title="Sign In" fn={onSignIn} />
+            <Button 
+                title={loading ? "Signing In..." : "Sign In"} 
+                fn={onSignIn}
+                disabled={loading}
+            />
 
             <View style={styles.switchContainer}>
                 <Text style={styles.switchText}>
                     Don't have an account?
-                    <TouchableOpacity onPress={() => setMode('signUp')}>
+                    <TouchableOpacity 
+                        onPress={() => setMode('signUp')}
+                        disabled={loading}
+                    >
                         <Text style={styles.linkText}> Sign Up</Text>
                     </TouchableOpacity>
                 </Text>
@@ -75,7 +140,6 @@ const SignIn = ({ role, setAuth, setRole, navigation, setMode }) => {
     );
 };
 
-// Styles
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: 16,
