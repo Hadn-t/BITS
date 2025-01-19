@@ -1,5 +1,5 @@
-import React, { useLayoutEffect } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useLayoutEffect, useState, useEffect } from 'react';
+import { View, Text, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
   faStethoscope,
@@ -13,26 +13,50 @@ import {
   faPen
 } from "@fortawesome/free-solid-svg-icons";
 import { signOut } from 'firebase/auth';
-import { auth } from '../firebaseConfig'; const ProfileScreen = ({ route, setAuth, navigation }) => {
+import { auth, db } from '../firebaseConfig'; // assuming you have firebaseConfig file
+import { doc, getDoc } from 'firebase/firestore';
+
+const ProfileScreen = ({ route, setAuth, navigation }) => {
+  const [userData, setUserData] = useState(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
-    })
-  }, [navigation])
+    });
+  }, [navigation]);
 
   const { role } = route.params;
 
+  const fetchUserData = async () => {
+    try {
+      const userRef = doc(db, "users", auth.currentUser.uid); // "users" is your collection name
+      const docSnap = await getDoc(userRef);
+
+      if (docSnap.exists()) {
+        setUserData(docSnap.data()); // Fetch user data
+      } else {
+        console.log("No such document!");
+      }
+    } catch (error) {
+      console.error("Error getting user data: ", error);
+    }
+  };
+
+  useEffect(() => {
+    if (auth.currentUser) {
+      fetchUserData(); // Fetch user data after component is mounted
+    }
+  }, []);
+
   const handleEditProfile = () => {
     console.log('Edit Profile Button Pressed');
-   
+    // Add navigation to the edit profile screen here if needed
   };
 
   const handleLogout = () => {
     signOut(auth)
       .then(() => {
-        setAuth(false); 
-      
+        setAuth(false);
       })
       .catch((error) => {
         console.error("Logout Error: ", error);
@@ -42,350 +66,265 @@ import { auth } from '../firebaseConfig'; const ProfileScreen = ({ route, setAut
 
   const DoctorProfile = () => (
     <ScrollView style={styles.scrollView}>
-      <View style={styles.headerSection}>
+      <View style={styles.profileHeader}>
         <Image
           source={{ uri: 'https://example.com/doctor_profile.jpg' }}
-          style={styles.profilePicture}
+          style={styles.profileImage}
         />
-        <View style={styles.badgeContainer}>
+        <View style={styles.profileInfo}>
           <FontAwesomeIcon icon={faUserMd} size={20} color="#007BFF" />
-          <Text style={styles.verifiedBadge}>Verified Doctor</Text>
+          <Text style={styles.verifiedText}>Verified Doctor</Text>
         </View>
       </View>
 
-      <View style={styles.infoSection}>
-        <Text style={styles.name}>Dr. John Doe</Text>
-        <Text style={styles.specialty}>Cardiologist</Text>
+      <Text style={styles.name}>{userData?.firstname || 'Dr. John Doe'}</Text>
+      <Text style={styles.role}>Cardiologist</Text>
 
-        <View style={styles.contactInfo}>
-          <View style={styles.infoRow}>
-            <FontAwesomeIcon icon={faEnvelope} size={16} color="#555" />
-            <Text style={styles.infoText}>john.doe@hospital.com</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <FontAwesomeIcon icon={faPhone} size={16} color="#555" />
-            <Text style={styles.infoText}>+1234567890</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <FontAwesomeIcon icon={faHospital} size={16} color="#555" />
-            <Text style={styles.infoText}>Central Hospital</Text>
-          </View>
+      <View style={styles.contactInfo}>
+        <View style={styles.contactItem}>
+          <FontAwesomeIcon icon={faEnvelope} size={16} color="#555" />
+          <Text style={styles.contactText}>{userData?.email || 'john.doe@hospital.com'}</Text>
+        </View>
+        <View style={styles.contactItem}>
+          <FontAwesomeIcon icon={faPhone} size={16} color="#555" />
+          <Text style={styles.contactText}>+1234567890</Text>
+        </View>
+        <View style={styles.contactItem}>
+          <FontAwesomeIcon icon={faHospital} size={16} color="#555" />
+          <Text style={styles.contactText}>Central Hospital</Text>
         </View>
       </View>
 
-      <View style={styles.statsContainer}>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>150+</Text>
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>150+</Text>
           <Text style={styles.statLabel}>Patients</Text>
         </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>10+</Text>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>10+</Text>
           <Text style={styles.statLabel}>Years Exp.</Text>
         </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statNumber}>4.9</Text>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>4.9</Text>
           <Text style={styles.statLabel}>Rating</Text>
         </View>
       </View>
 
-      <View style={styles.scheduleSection}>
+      <View style={styles.schedule}>
         <Text style={styles.sectionTitle}>Current Schedule</Text>
-        <View style={styles.scheduleInfo}>
-          <Text style={styles.scheduleText}>Mon - Fri: 9:00 AM - 5:00 PM</Text>
-          <Text style={styles.scheduleText}>Sat: 9:00 AM - 1:00 PM</Text>
-        </View>
+        <Text style={styles.scheduleText}>Mon - Fri: 9:00 AM - 5:00 PM</Text>
+        <Text style={styles.scheduleText}>Sat: 9:00 AM - 1:00 PM</Text>
       </View>
+      
+      <TouchableOpacity onPress={handleEditProfile} style={styles.button}>
+        <Text style={styles.buttonText}>Edit Profile</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={handleLogout} style={[styles.button, styles.logoutButton]}>
+        <Text style={styles.buttonText}>Log Out</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 
   const ClientProfile = () => (
     <ScrollView style={styles.scrollView}>
-      <View style={styles.headerSection}>
+      <View style={styles.profileHeader}>
         <Image
           source={{ uri: 'https://example.com/client_profile.jpg' }}
-          style={styles.profilePicture}
+          style={styles.profileImage}
         />
-        <View style={styles.badgeContainer}>
+        <View style={styles.profileInfo}>
           <FontAwesomeIcon icon={faUserCircle} size={20} color="#28a745" />
-          <Text style={styles.memberBadge}>Premium Member</Text>
+          <Text style={styles.verifiedText}>Premium Member</Text>
         </View>
       </View>
 
-      <View style={styles.infoSection}>
-        <Text style={styles.name}>John Doe</Text>
-        <View style={styles.contactInfo}>
-          <View style={styles.infoRow}>
-            <FontAwesomeIcon icon={faEnvelope} size={16} color="#555" />
-            <Text style={styles.infoText}>john.doe@example.com</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <FontAwesomeIcon icon={faPhone} size={16} color="#555" />
-            <Text style={styles.infoText}>+1234567890</Text>
-          </View>
+      <Text style={styles.name}>{userData?.firstname || 'John Doe'}</Text>
+
+      <View style={styles.contactInfo}>
+        <View style={styles.contactItem}>
+          <FontAwesomeIcon icon={faEnvelope} size={16} color="#555" />
+          <Text style={styles.contactText}>{userData?.email || 'john.doe@example.com'}</Text>
+        </View>
+        <View style={styles.contactItem}>
+          <FontAwesomeIcon icon={faPhone} size={16} color="#555" />
+          <Text style={styles.contactText}>+1234567890</Text>
         </View>
       </View>
 
-      <View style={styles.healthInfoSection}>
+      <View style={styles.healthInfo}>
         <Text style={styles.sectionTitle}>Health Information</Text>
-        <View style={styles.healthInfo}>
-          <View style={styles.healthRow}>
-            <Text style={styles.healthLabel}>Blood Type:</Text>
-            <Text style={styles.healthValue}>A+</Text>
-          </View>
-          <View style={styles.healthRow}>
-            <Text style={styles.healthLabel}>Age:</Text>
-            <Text style={styles.healthValue}>35</Text>
-          </View>
-          <View style={styles.healthRow}>
-            <Text style={styles.healthLabel}>Weight:</Text>
-            <Text style={styles.healthValue}>75 kg</Text>
-          </View>
-          <View style={styles.healthRow}>
-            <Text style={styles.healthLabel}>Height:</Text>
-            <Text style={styles.healthValue}>175 cm</Text>
-          </View>
+        <View style={styles.healthItem}>
+          <Text style={styles.healthLabel}>Blood Type:</Text>
+          <Text style={styles.healthValue}>A+</Text>
+        </View>
+        <View style={styles.healthItem}>
+          <Text style={styles.healthLabel}>Age:</Text>
+          <Text style={styles.healthValue}>35</Text>
+        </View>
+        <View style={styles.healthItem}>
+          <Text style={styles.healthLabel}>Weight:</Text>
+          <Text style={styles.healthValue}>75 kg</Text>
+        </View>
+        <View style={styles.healthItem}>
+          <Text style={styles.healthLabel}>Height:</Text>
+          <Text style={styles.healthValue}>175 cm</Text>
         </View>
       </View>
 
-      <View style={styles.upcomingSection}>
+      <View style={styles.appointment}>
         <Text style={styles.sectionTitle}>Next Appointment</Text>
         <View style={styles.appointmentCard}>
           <FontAwesomeIcon icon={faCalendarCheck} size={20} color="#007BFF" />
-          <Text style={styles.appointmentText}>Dr. Smith - Cardiologist</Text>
-          <Text style={styles.appointmentDate}>Tomorrow, 10:00 AM</Text>
+          <Text style={styles.appointmentText}>Appointment with Dr. Smith - 25th Jan 2025</Text>
         </View>
       </View>
+
+      <TouchableOpacity onPress={handleEditProfile} style={styles.button}>
+        <Text style={styles.buttonText}>Edit Profile</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={handleLogout} style={[styles.button, styles.logoutButton]}>
+        <Text style={styles.buttonText}>Log Out</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 
   return (
     <View style={styles.container}>
-      {role === 'doctor' ? <DoctorProfile /> : <ClientProfile />}
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.button, styles.editButton]}
-          onPress={handleEditProfile}
-        >
-          <FontAwesomeIcon icon={faPen} size={16} color="#fff" />
-          <Text style={styles.buttonText}>Edit Profile</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.button, styles.logoutButton]}
-          onPress={handleLogout}
-        >
-          <Text style={styles.buttonText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
+      {role === 'doctor' ? DoctorProfile() : ClientProfile()}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const styles = {
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
   scrollView: {
-    flex: 1,
-    padding: 12,  // Reduced padding
+    padding: 20,
   },
-  headerSection: {
+  profileHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
   },
-  profilePicture: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 5,  // Reduced from 10
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginRight: 15,
   },
-  badgeContainer: {
+  profileInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    padding: 8,
-    borderRadius: 20,
-    marginBottom: 5,  // Reduced from 10
   },
-  verifiedBadge: {
-    marginLeft: 8,
+  verifiedText: {
+    fontSize: 16,
+    fontWeight: 'bold',
     color: '#007BFF',
-    fontWeight: '600',
-  },
-  memberBadge: {
-    marginLeft: 8,
-    color: '#28a745',
-    fontWeight: '600',
-  },
-  infoSection: {
-    alignItems: 'center',
-    marginBottom: 15,  // Reduced from 20
   },
   name: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#333',
-    marginBottom: 5,
   },
-  specialty: {
+  role: {
     fontSize: 18,
-    color: '#007BFF',
-    marginBottom: 15,
-  },
-  contactInfo: {
-    width: '100%',
-    backgroundColor: '#fff',
-    padding: 12,  // Reduced padding
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    color: '#555',
     marginBottom: 10,
   },
-  infoText: {
-    marginLeft: 10,
-    color: '#555',
-    fontSize: 16,
+  contactInfo: {
+    marginTop: 10,
   },
-  statsContainer: {
+  contactItem: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 15,  // Reduced from 20
-  },
-  statBox: {
-    backgroundColor: '#fff',
-    padding: 12,  // Reduced padding
-    borderRadius: 10,
     alignItems: 'center',
-    width: '30%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginBottom: 8,
   },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  contactText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: '#555',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 20,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: '600',
     color: '#007BFF',
   },
   statLabel: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 5,
+    color: '#555',
   },
-  scheduleSection: {
-    backgroundColor: '#fff',
-    padding: 12,  // Reduced padding
-    borderRadius: 10,
-    marginBottom: 15,  // Reduced from 20
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  schedule: {
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 5,  // Reduced from 10
-  },
-  scheduleInfo: {
-    marginTop: 10,
+    marginBottom: 10,
   },
   scheduleText: {
     fontSize: 16,
     color: '#555',
     marginBottom: 5,
   },
-  healthInfoSection: {
-    backgroundColor: '#fff',
-    padding: 12,  // Reduced padding
-    borderRadius: 10,
-    marginBottom: 15,  // Reduced from 20
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
   healthInfo: {
-    marginTop: 10,
+    marginBottom: 20,
   },
-  healthRow: {
+  healthItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   healthLabel: {
     fontSize: 16,
-    color: '#666',
+    color: '#555',
   },
   healthValue: {
     fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
+    color: '#555',
   },
-  upcomingSection: {
-    backgroundColor: '#fff',
-    padding: 12,  // Reduced padding
-    borderRadius: 10,
-    marginBottom: 15,  // Reduced from 20
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  appointment: {
+    marginBottom: 20,
   },
   appointmentCard: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    backgroundColor: '#e9ecef',
+    padding: 15,
+    borderRadius: 10,
   },
   appointmentText: {
     fontSize: 16,
+    marginLeft: 10,
     color: '#333',
-    marginTop: 8,
-  },
-  appointmentDate: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  buttonContainer: {
-    padding: 16,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
   },
   button: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  editButton: {
     backgroundColor: '#007BFF',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 20,
   },
   logoutButton: {
     backgroundColor: '#dc3545',
   },
   buttonText: {
+    fontSize: 18,
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
+    textAlign: 'center',
   },
-});
+};
 
 export default ProfileScreen;
