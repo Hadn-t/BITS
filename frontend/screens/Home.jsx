@@ -1,14 +1,14 @@
 import React, { useLayoutEffect, useState, useEffect } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, Text, View, SafeAreaView, TextInput, Image, Linking, Alert } from 'react-native';
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
-import { 
-  faBell, 
-  faPhone, 
-  faTooth, 
-  faHeart, 
-  faLungs, 
-  faUserMd, 
-  faBrain, 
+import {
+  faBell,
+  faPhone,
+  faTooth,
+  faHeart,
+  faLungs,
+  faUserMd,
+  faBrain,
   faStomach,
   faFlask,
   faSyringe,
@@ -16,8 +16,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth } from '../firebaseConfig';
-import { faAirbnb } from '@fortawesome/free-brands-svg-icons';
-
+import Map from '../common/mapFlatList';
 const HomeScreen = ({ navigation }) => {
   const [userName, setUserName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,12 +56,12 @@ const HomeScreen = ({ navigation }) => {
       const centersRef = collection(db, "medicalCenters");
       const q = query(centersRef, where("active", "==", true));
       const querySnapshot = await getDocs(q);
-      
+
       const centers = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      
+
       setMedicalCenters(centers);
     } catch (error) {
       console.error("Error fetching medical centers:", error);
@@ -73,7 +72,7 @@ const HomeScreen = ({ navigation }) => {
     try {
       const db = getFirestore();
       const notificationsRef = collection(db, "notifications");
-      const q = query(notificationsRef, 
+      const q = query(notificationsRef,
         where("userId", "==", auth.currentUser?.uid),
         where("read", "==", false)
       );
@@ -144,7 +143,7 @@ const HomeScreen = ({ navigation }) => {
   ];
 
   const CategoryItem = ({ icon, title }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.categoryItem}
       onPress={() => handleCategoryPress(title)}
     >
@@ -170,7 +169,7 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.welcomeText}>Welcome back,</Text>
             <Text style={styles.userName}>{userName}</Text>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.notificationButton}
             onPress={handleNotificationsPress}
           >
@@ -215,7 +214,7 @@ const HomeScreen = ({ navigation }) => {
           </View>
           <View style={styles.categoriesGrid}>
             {categories.map((category) => (
-              <CategoryItem 
+              <CategoryItem
                 key={category.id}
                 icon={category.icon}
                 title={category.title}
@@ -224,19 +223,14 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
 
-          {/* Nearby Medical Centers */}
-          <View style={styles.medicalCentersSection}>
-          <View style={styles.sectionHeader}>
+        {/* Nearby Medical Centers */}
+        <View style={styles.MedicalCenterSection}>
             <Text style={styles.sectionTitle}>Nearby Medical Centers</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllButton}>See All</Text>
-            </TouchableOpacity>
+          <View style={styles.sectionHeader}>
+            <Map />
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.medicalCentersList}>
-            <MedicalCenter name="Sunrise Health Clinic" />
-            <MedicalCenter name="Golden Cardiology Center" />
-          </ScrollView>
         </View>
+
       </ScrollView>
 
 
@@ -344,6 +338,9 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   categoriesSection: {
+    padding: 16,
+  },
+  MedicalCenterSection: {
     padding: 16,
   },
   sectionHeader: {

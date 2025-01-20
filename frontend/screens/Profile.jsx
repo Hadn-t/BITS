@@ -11,7 +11,8 @@ import {
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
-  StyleSheet
+  StyleSheet,
+  Alert
 } from 'react-native';
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import {
@@ -86,6 +87,7 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
     navigation.navigate('EditProfile', { userData });
   };
 
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -98,18 +100,18 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
 
   const ProfileHeader = ({ name, role, imageUrl, verified }) => (
     <Animated.View style={[styles.profileHeader, { height: headerHeight }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#007BFF" />
+      <StatusBar barStyle="dark-content"/>
       <View style={styles.headerTopRow}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <FontAwesomeIcon icon={faChevronLeft} size={24} color="#fff" />
         </TouchableOpacity>
       </View>
-      <Animatable.View 
-        animation="fadeIn" 
-        duration={1000} 
+      <Animatable.View
+        animation="fadeIn"
+        duration={1000}
         style={styles.headerContent}
       >
         <Image
@@ -119,10 +121,10 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
         <View style={styles.headerInfo}>
           <Text style={styles.headerName} numberOfLines={1}>{name}</Text>
           <View style={styles.verificationBadge}>
-            <FontAwesomeIcon 
-              icon={verified ? faCertificate : faUserCircle} 
-              size={16} 
-              color="#fff" 
+            <FontAwesomeIcon
+              icon={verified ? faCertificate : faUserCircle}
+              size={16}
+              color="#fff"
             />
             <Text style={styles.verifiedText}>{role}</Text>
           </View>
@@ -132,8 +134,8 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
   );
 
   const StatCard = ({ icon, value, label }) => (
-    <Animatable.View 
-      animation="fadeInUp" 
+    <Animatable.View
+      animation="fadeInUp"
       delay={300}
       style={styles.statCard}
     >
@@ -144,7 +146,7 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
   );
 
   const DoctorProfile = () => (
-    <ScrollView 
+    <ScrollView
       style={styles.scrollView}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -155,7 +157,7 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
       )}
       scrollEventThrottle={16}
     >
-      <ProfileHeader 
+      <ProfileHeader
         name={userData?.firstname || 'Dr. John Doe'}
         role="Cardiologist"
         imageUrl="https://example.com/doctor_profile.jpg"
@@ -202,7 +204,7 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
         </Animatable.View>
 
         <View style={styles.buttonGroup}>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleEditProfile}
             style={styles.editButton}
           >
@@ -210,19 +212,38 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
             <Text style={styles.buttonText}>Edit Profile</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            onPress={handleLogout}
-            style={styles.logoutButton}
-          >
-            <Text style={styles.buttonText}>Log Out</Text>
-          </TouchableOpacity>
+          <TouchableOpacity
+  onPress={() => Alert.alert(
+    "Confirm Logout",
+    "Are you sure you want to log out?",
+    [
+      {
+        text: "Cancel",
+        style: "cancel",
+        // iOS-specific color, on Android it will use default system colors
+        style: { color: '#4A8B94' }  // Matches your app's theme color
+      },
+      {
+        text: "Logout",
+        onPress: handleLogout,
+        style: "destructive", // iOS will automatically make this red
+        // Additional styling for Android
+        style: { color: '#e74c3c' }  // Red color for emphasis
+      }
+    ],
+    { cancelable: true }  // Allows dismissing alert by tapping outside
+  )}
+  style={styles.logoutButton}
+>
+  <Text style={styles.buttonText}>Log Out</Text>
+</TouchableOpacity>
         </View>
       </View>
     </ScrollView>
   );
 
   const ClientProfile = () => (
-    <ScrollView 
+    <ScrollView
       style={styles.scrollView}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -233,7 +254,7 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
       )}
       scrollEventThrottle={16}
     >
-      <ProfileHeader 
+      <ProfileHeader
         name={userData?.firstname || 'John Doe'}
         role="Premium Member"
         imageUrl="https://example.com/client_profile.jpg"
@@ -284,7 +305,7 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
         </Animatable.View>
 
         <View style={styles.buttonGroup}>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleEditProfile}
             style={styles.editButton}
           >
@@ -292,12 +313,28 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
             <Text style={styles.buttonText}>Edit Profile</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            onPress={handleLogout}
-            style={styles.logoutButton}
-          >
-            <Text style={styles.buttonText}>Log Out</Text>
-          </TouchableOpacity>
+          <TouchableOpacity
+  onPress={() => Alert.alert(
+    "Confirm Logout",
+    "Are you sure you want to log out?",
+    [
+      {
+        text: "Cancel",
+        style: "cancel",
+        style: { backgroundColor: '#4A8B94' } 
+      },
+      {
+        text: "Logout",
+        onPress: handleLogout,
+        style: { backgroundColor: '#e74c3c' }  
+      }
+    ],
+    { cancelable: true } 
+  )}
+  style={styles.logoutButton}
+>
+  <Text style={styles.buttonText}>Log Out</Text>
+</TouchableOpacity>
         </View>
       </View>
     </ScrollView>
@@ -313,55 +350,52 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content"/>
       {role === 'doctor' ? <DoctorProfile /> : <ClientProfile />}
     </SafeAreaView>
   );
 };
-
-const styles =StyleSheet.create({
+const styles = StyleSheet.create({
   // Container Styles
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
   },
   contentContainer: {
-    padding: 20,
+    padding: 16,
     paddingTop: 10,
   },
 
   // Header Styles
   profileHeader: {
-    backgroundColor: '#007BFF',
-    paddingTop: Platform.OS === 'ios' ? 44 : StatusBar.currentHeight,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    elevation: 5,
+    backgroundColor: '#4A8B94',
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowRadius: 2,
     zIndex: 1,
   },
-
   headerTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    height: 44,
+    paddingHorizontal: 16,
+    height: 30,
   },
-
   backButton: {
+    marginTop:20,
     width: 40,
     height: 40,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -369,75 +403,71 @@ const styles =StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 20,
+    marginLeft:'10%',
   },
-
   profileImage: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
-    borderColor: '#fff',
-    marginRight: 15,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    marginRight: 12,
   },
-
   headerInfo: {
     flex: 1,
   },
-
   headerName: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#fff',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
-
   verificationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 15,
+    borderRadius: 12,
     alignSelf: 'flex-start',
   },
-
   verifiedText: {
-    color: '#fff',
+    color: '#FFFFFF',
     marginLeft: 6,
     fontSize: 14,
-    fontWeight: '500'},
+    fontWeight: '500',
+  },
 
   // Stats Styles
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginVertical: 20,
-    paddingHorizontal: 5,
+    marginVertical: 16,
+    paddingHorizontal: 4,
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 15,
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 16,
     alignItems: 'center',
-    marginHorizontal: 5,
-    elevation: 3,
+    marginHorizontal: 4,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   statValue: {
     fontSize: 20,
     fontWeight: '600',
     color: '#333',
-    marginTop: 5,
+    marginTop: 4,
   },
   statLabel: {
     fontSize: 12,
@@ -447,54 +477,55 @@ const styles =StyleSheet.create({
 
   // Section Styles
   section: {
-    marginBottom: 25,
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#333',
     marginBottom: 12,
-    paddingLeft: 5,
+    paddingLeft: 4,
+  },
+
+  // Card Styles (Contact, Schedule, Health)
+  cardBase: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
 
   // Contact Card Styles
   contactCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
   },
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   contactText: {
     marginLeft: 12,
     fontSize: 16,
     color: '#333',
-    flex: 1,
   },
 
   // Schedule Styles
   scheduleCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
   },
   scheduleItem: {
     marginBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#F5F5F5',
     paddingBottom: 12,
   },
   scheduleDay: {
@@ -510,26 +541,21 @@ const styles =StyleSheet.create({
 
   // Health Card Styles
   healthCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
   },
   healthRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   healthItem: {
     flex: 1,
     alignItems: 'center',
     padding: 10,
     borderRightWidth: 1,
-    borderRightColor: '#f0f0f0',
+    borderRightColor: '#F5F5F5',
   },
   healthLabel: {
     fontSize: 14,
@@ -545,19 +571,14 @@ const styles =StyleSheet.create({
 
   // Appointment Styles
   appointmentCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   appointmentInfo: {
-    marginLeft: 15,
+    marginLeft: 12,
     flex: 1,
   },
   appointmentTitle: {
@@ -573,17 +594,17 @@ const styles =StyleSheet.create({
   },
   appointmentTime: {
     fontSize: 14,
-    color: '#007BFF',
+    color: '#4A8B94',
     fontWeight: '500',
   },
 
   // Button Styles
   buttonGroup: {
-    marginTop: 10,
-    marginBottom: 30,
+    marginTop: 16,
+    marginBottom: 24,
   },
   editButton: {
-    backgroundColor: '#007BFF',
+    backgroundColor: '#4A8B94',
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
@@ -592,42 +613,30 @@ const styles =StyleSheet.create({
     marginBottom: 12,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   logoutButton: {
-    backgroundColor: '#dc3545',
+    backgroundColor: '#e74c3c',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
   },
+});
 
-  // Card Animations
-  fadeIn: {
-    from: {
-      opacity: 0,
-      transform: [{ translateY: 20 }],
-    },
-    to: {
-      opacity: 1,
-      transform: [{ translateY: 0 }],
-    },
-  },
-
- })
 
 
 export default ProfileScreen;
