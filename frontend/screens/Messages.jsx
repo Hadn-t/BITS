@@ -11,11 +11,9 @@ import {
 } from "react-native";
 import { signOut } from "firebase/auth";
 import { auth, firestore } from "../firebaseConfig";
-import { collection, query, orderBy, onSnapshot, addDoc } from "firebase/firestore"; // import Firestore methods
+import { collection, query, orderBy, onSnapshot, addDoc } from "firebase/firestore";
 import { useNavigation } from "@react-navigation/native";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
-
-// Make sure to get Firestore instance correctly
 import { getFirestore } from "firebase/firestore";
 
 const { width } = Dimensions.get("window");
@@ -23,13 +21,12 @@ const { width } = Dimensions.get("window");
 export default function Messages() {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
-  const [usernames, setUsernames] = useState({}); // Cache for usernames
+  const [users, setUsers] = useState({}); // Store full user data
   const navigation = useNavigation();
   const flatListRef = useRef(null);
 
   const onSignOut = () => {
     signOut(auth).catch((error) => console.log("Error logging out: ", error));
-    navigation.navigate("Login");
   };
 
   useLayoutEffect(() => {
@@ -50,20 +47,23 @@ export default function Messages() {
   }, [navigation]);
 
   useEffect(() => {
-    // Correct usage of Firestore
-    const firestore = getFirestore(); // Ensure firestore instance is initialized
+    const firestore = getFirestore();
 
-    // Fetching all usernames once on load
+    // Fetching all user data including role and specialization
     const usersRef = collection(firestore, "users");
     onSnapshot(usersRef, (snapshot) => {
       const userMap = {};
       snapshot.forEach((doc) => {
-        userMap[doc.id] = doc.data().username; // Use the `uid` as the key and the `username` as the value
+        userMap[doc.id] = {
+          username: doc.data().username,
+          role: doc.data().role,
+          specialization: doc.data().specialization,
+        };
       });
-      setUsernames(userMap);
+      setUsers(userMap);
     });
 
-    // Fetching messages in descending order
+    // Fetching messages
     const messagesRef = collection(firestore, "messages");
     const q = query(messagesRef, orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -80,14 +80,14 @@ export default function Messages() {
   const sendMessage = useCallback(() => {
     if (!inputText.trim()) return;
 
-    const firestore = getFirestore(); // Ensure firestore instance is initialized
+    const firestore = getFirestore();
     const messagesRef = collection(firestore, "messages");
 
     const message = {
       createdAt: Date.now(),
       text: inputText.trim(),
       user: {
-        _id: auth?.currentUser?.uid, // Using UID to track the user
+        _id: auth?.currentUser?.uid,
       },
     };
 
@@ -102,7 +102,8 @@ export default function Messages() {
       minute: "2-digit",
     });
 
-    const username = usernames[item.user._id] || "Loading..."; // Fallback to "Loading..." if the username isn't loaded yet
+    const userData = users[item.user._id] || {};
+    const isDoctor = userData.role === "doctor";
 
     return (
       <View
@@ -114,16 +115,25 @@ export default function Messages() {
         {!isCurrentUser && (
           <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
         )}
-        <View>
-          {!isCurrentUser ? (
-            <Text style={styles.userIdText_current}>{username}</Text>
-          ) : (
-            <Text style={styles.userIdText_other}>You</Text>
+        <View style={styles.messageContentContainer}>
+          {!isCurrentUser && (
+            <View style={styles.userInfoContainer}>
+              <Text style={styles.username}>{userData.username}</Text>
+              {isDoctor && (
+                <View style={styles.doctorInfoContainer}>
+                  <Text style={styles.doctorBadge}>Doctor</Text>
+                  <Text style={styles.specialization}>
+                    {userData.specialization}
+                  </Text>
+                </View>
+              )}
+            </View>
           )}
           <View
             style={[
               styles.messageContainer,
               isCurrentUser ? styles.currentUserMessage : styles.otherUserMessage,
+              isDoctor && !isCurrentUser && styles.doctorMessage,
             ]}
           >
             <Text
@@ -206,8 +216,39 @@ const styles = StyleSheet.create({
   otherUserRow: {
     justifyContent: "flex-start",
   },
+  messageContentContainer: {
+    maxWidth: width * 0.75,
+  },
+  userInfoContainer: {
+    marginBottom: 4,
+    flexDirection: 'column',
+  },
+  username: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1E293B',
+    marginBottom: 2,
+  },
+  doctorInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  doctorBadge: {
+    backgroundColor: '#818CF8',
+    color: 'white',
+    fontSize: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  specialization: {
+    fontSize: 12,
+    color: '#64748B',
+    fontStyle: 'italic',
+  },
   messageContainer: {
-    maxWidth: width * 0.7,
     padding: 12,
     borderRadius: 20,
     marginHorizontal: 8,
@@ -221,6 +262,10 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 4,
     borderWidth: 1,
     borderColor: "#E2E8F0",
+  },
+  doctorMessage: {
+    backgroundColor: "#EEF2FF",
+    borderColor: "#C7D2FE",
   },
   messageText: {
     fontSize: 16,
@@ -274,19 +319,5 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginRight: 12,
-  },
-  userIdText_current: {
-    fontSize: 12,
-    color: "#64748B",
-    marginBottom: 4,
-    marginRight: 40,
-    textAlign: "right",
-  },
-  userIdText_other: {
-    fontSize: 12,
-    color: "#64748B",
-    marginBottom: 4,
-    marginLeft: 40,
-    textAlign: "left",
   },
 });

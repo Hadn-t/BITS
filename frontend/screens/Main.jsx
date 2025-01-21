@@ -68,6 +68,15 @@ const MainStack = ({ navigation, role, setAuth }) => {
               ),
             }}
           />
+            <Tab.Screen
+              name="Messages"
+              component={MessagesScreen}
+              options={{
+                tabBarIcon: ({ focused, color, size }) => (
+                  <FontAwesomeIcon icon={faCommentDots} size={size} color={color} />
+                ),
+              }}
+            />
         </>
       ) : role === 'doctor' ? (
         <>
