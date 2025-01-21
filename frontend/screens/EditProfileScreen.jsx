@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import {
     View,
     Text,
@@ -10,7 +10,6 @@ import {
     ActivityIndicator,
     SafeAreaView,
     StatusBar,
-
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
@@ -22,7 +21,6 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 
 const EditProfileScreen = ({ route, navigation }) => {
-    // Predefined specializations array
     const SPECIALIZATIONS = [
         "Dentistry",
         "Cardiology",
@@ -32,8 +30,9 @@ const EditProfileScreen = ({ route, navigation }) => {
         "Gastroenterology",
         "Laboratory",
         "Vaccination",
-
     ];
+
+    const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
     useLayoutEffect(() => {
         navigation.setOptions({
@@ -44,22 +43,25 @@ const EditProfileScreen = ({ route, navigation }) => {
     const { userData } = route.params;
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
+        // Common fields
         firstname: userData?.firstname || '',
         lastname: userData?.lastname || '',
         phone: userData?.phone || '',
         email: userData?.email || auth.currentUser?.email || '',
         role: userData?.role || 'client',
+        
         // Doctor specific fields
         specialization: userData?.specialization || SPECIALIZATIONS[0],
-        experience: userData?.experience || '0',
-        hospital: userData?.hospital || 'General Hospital',
+        experience: userData?.experience || '',
+        hospital: userData?.hospital || '',
         schedule: userData?.schedule || {
             weekday: '9:00 AM - 5:00 PM',
             weekend: '9:00 AM - 1:00 PM'
         },
+        
         // Client specific fields
         age: userData?.age || '',
-        bloodType: userData?.bloodType || 'A+',
+        bloodType: userData?.bloodType || BLOOD_TYPES[0],
         weight: userData?.weight || '',
         height: userData?.height || '',
         allergies: userData?.allergies || '',
@@ -69,19 +71,76 @@ const EditProfileScreen = ({ route, navigation }) => {
     const handleSave = async () => {
         try {
             setLoading(true);
+
+            // Validate required fields
+            if (!formData.firstname || !formData.lastname || !formData.phone) {
+                Alert.alert('Error', 'Please fill in required fields: First Name, Last Name, and Phone');
+                return;
+            }
+
             const userRef = doc(db, "users", auth.currentUser.uid);
 
-            // Remove empty fields before updating
-            const updateData = Object.fromEntries(
-                Object.entries(formData).filter(([_, value]) => value !== '')
+            // Base update object with common fields
+            const updateData = {
+                firstname: formData.firstname,
+                lastname: formData.lastname,
+                phone: formData.phone,
+                email: formData.email,
+                role: formData.role,
+                updatedAt: new Date().toISOString()
+            };
+
+            // Add role-specific fields
+            if (formData.role === 'doctor') {
+                // Validate doctor-specific required fields
+                if (!formData.specialization || !formData.hospital) {
+                    Alert.alert('Error', 'Please fill in required fields: Specialization and Hospital');
+                    return;
+                }
+
+                Object.assign(updateData, {
+                    specialization: formData.specialization,
+                    experience: formData.experience,
+                    hospital: formData.hospital,
+                    schedule: {
+                        weekday: formData.schedule.weekday,
+                        weekend: formData.schedule.weekend
+                    }
+                });
+            } else {
+                // Add client-specific fields if they exist
+                if (formData.age) updateData.age = formData.age;
+                if (formData.bloodType) updateData.bloodType = formData.bloodType;
+                if (formData.weight) updateData.weight = formData.weight;
+                if (formData.height) updateData.height = formData.height;
+                if (formData.allergies) updateData.allergies = formData.allergies;
+                if (formData.medicalHistory) updateData.medicalHistory = formData.medicalHistory;
+            }
+
+            // Remove any empty string values
+            const cleanedUpdateData = Object.fromEntries(
+                Object.entries(updateData).filter(([_, value]) => 
+                    value !== '' && value !== null && value !== undefined
+                )
             );
 
-            await updateDoc(userRef, updateData);
-            Alert.alert('Success', 'Profile updated successfully');
-            navigation.goBack();
+            await updateDoc(userRef, cleanedUpdateData);
+            Alert.alert(
+                'Success', 
+                'Profile updated successfully',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => navigation.goBack()
+                    }
+                ]
+            );
         } catch (error) {
             console.error("Error updating profile: ", error);
-            Alert.alert('Error', 'Failed to update profile. Please try again.');
+            Alert.alert(
+                'Error', 
+                'Failed to update profile. Please try again.'
+            );
         } finally {
             setLoading(false);
         }
@@ -90,7 +149,7 @@ const EditProfileScreen = ({ route, navigation }) => {
     const renderDoctorFields = () => (
         <>
             <View style={styles.inputGroup}>
-                <Text style={styles.label}>Specialization</Text>
+                <Text style={styles.label}>Specialization<Text style={styles.required}>*</Text></Text>
                 <View style={styles.pickerContainer}>
                     <Picker
                         selectedValue={formData.specialization}
@@ -122,7 +181,7 @@ const EditProfileScreen = ({ route, navigation }) => {
             </View>
 
             <View style={styles.inputGroup}>
-                <Text style={styles.label}>Hospital</Text>
+                <Text style={styles.label}>Hospital<Text style={styles.required}>*</Text></Text>
                 <TextInput
                     style={styles.input}
                     value={formData.hospital}
@@ -174,12 +233,23 @@ const EditProfileScreen = ({ route, navigation }) => {
 
             <View style={styles.inputGroup}>
                 <Text style={styles.label}>Blood Type</Text>
-                <TextInput
-                    style={styles.input}
-                    value={formData.bloodType}
-                    onChangeText={(text) => setFormData(prev => ({ ...prev, bloodType: text }))}
-                    placeholder="Enter blood type"
-                />
+                <View style={styles.pickerContainer}>
+                    <Picker
+                        selectedValue={formData.bloodType}
+                        style={styles.picker}
+                        onValueChange={(itemValue) =>
+                            setFormData(prev => ({ ...prev, bloodType: itemValue }))
+                        }
+                    >
+                        {BLOOD_TYPES.map((type) => (
+                            <Picker.Item
+                                key={type}
+                                label={type}
+                                value={type}
+                            />
+                        ))}
+                    </Picker>
+                </View>
             </View>
 
             <View style={styles.inputGroup}>
@@ -246,7 +316,7 @@ const EditProfileScreen = ({ route, navigation }) => {
                 <View style={styles.form}>
                     {/* Common Fields */}
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>First Name</Text>
+                        <Text style={styles.label}>First Name<Text style={styles.required}>*</Text></Text>
                         <TextInput
                             style={styles.input}
                             value={formData.firstname}
@@ -256,7 +326,7 @@ const EditProfileScreen = ({ route, navigation }) => {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Last Name</Text>
+                        <Text style={styles.label}>Last Name<Text style={styles.required}>*</Text></Text>
                         <TextInput
                             style={styles.input}
                             value={formData.lastname}
@@ -266,7 +336,7 @@ const EditProfileScreen = ({ route, navigation }) => {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Phone</Text>
+                        <Text style={styles.label}>Phone<Text style={styles.required}>*</Text></Text>
                         <TextInput
                             style={styles.input}
                             value={formData.phone}
@@ -290,7 +360,7 @@ const EditProfileScreen = ({ route, navigation }) => {
                     {formData.role === 'doctor' ? renderDoctorFields() : renderClientFields()}
 
                     <TouchableOpacity
-                        style={styles.saveButton}
+                        style={[styles.saveButton, loading && styles.disabledButton]}
                         onPress={handleSave}
                         disabled={loading}
                     >
@@ -344,6 +414,10 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         color: '#333',
         marginBottom: 8,
+    },
+    required: {
+        color: '#FF4444',
+        marginLeft: 4,
     },
     input: {
         borderWidth: 1,

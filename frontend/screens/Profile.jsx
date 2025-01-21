@@ -196,11 +196,11 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
           <View style={styles.scheduleCard}>
             <View style={styles.scheduleItem}>
               <Text style={styles.scheduleDay}>Monday - Friday</Text>
-              <Text style={styles.scheduleTime}>9:00 AM - 5:00 PM</Text>
+              <Text style={styles.scheduleTime}>{userData.schedule?.weekday||'Not Specifified'}</Text>
             </View>
             <View style={styles.scheduleItem}>
               <Text style={styles.scheduleDay}>Saturday</Text>
-              <Text style={styles.scheduleTime}>9:00 AM - 1:00 PM</Text>
+              <Text style={styles.scheduleTime}>{userData.schedule?.weekend||'Not Specifified'}</Text>
             </View>
           </View>
         </Animatable.View>

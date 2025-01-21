@@ -92,10 +92,10 @@ const CategoryDetails = ({ route }) => {
           <Text style={styles.scheduleTitle}>SCHEDULE</Text>
           <View style={styles.scheduleDetails}>
             <Text style={styles.scheduleText}>
-              Weekdays: {item.schedule?.__weekday || 'Not specified'}
+              Weekdays: {item.schedule?.weekday || 'Not specified'}
             </Text>
             <Text style={styles.scheduleText}>
-              Weekends: {item.schedule?.__weekend || 'Not specified'}
+              Weekends: {item.schedule?.weekend || 'Not specified'}
             </Text>
           </View>
         </View>
