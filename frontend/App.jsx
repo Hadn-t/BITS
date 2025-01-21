@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { onAuthStateChanged, getAuth } from 'firebase/auth';  
-import { doc, getDoc, getFirestore } from "firebase/firestore";  
+import { onAuthStateChanged, getAuth } from 'firebase/auth';
+import { doc, getDoc, getFirestore } from "firebase/firestore";
 import LoadingScreen from "./screens/Loading";
 import MainStack from "./screens/Main";
 import Authentication from "./screens/Authentication";
 import NotificationDetail from "./screens/NotificationDetail";
 import Notifications from "./screens/Notification";
-import { auth } from "./firebaseConfig"; 
+import { auth } from "./firebaseConfig";
+import EditProfileScreen from "./screens/EditProfileScreen";
+import CategoryDetails from "./screens/CategoryDetails";
 
 const Stack = createNativeStackNavigator();
 
@@ -22,44 +24,44 @@ export default function App() {
       if (user) {
         try {
           const db = getFirestore();
-          const userRef = doc(db, "users", user.uid);  
+          const userRef = doc(db, "users", user.uid);
           const userDoc = await getDoc(userRef);
-          
+
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            setRole(userData.role);  
+            setRole(userData.role);
           }
-          setAuthStatus(true);  
+          setAuthStatus(true);
         } catch (error) {
           console.error("Error fetching role:", error);
-          setAuthStatus(false);  
+          setAuthStatus(false);
         }
       } else {
-        setAuthStatus(false); 
+        setAuthStatus(false);
       }
     });
 
-    
+
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
-   
+
     const timer = setTimeout(() => {
       setInitial(true);
     }, 3000);
-    
-    return () => clearTimeout(timer); 
+
+    return () => clearTimeout(timer);
   }, []);
 
   return (
     <NavigationContainer>
       <Stack.Navigator>
         {!initial ? (
-         
+
           <Stack.Screen name="Loading" component={LoadingScreen} />
         ) : !authStatus ? (
-          
+
           <Stack.Screen
             name="Auth"
             children={(props) => (
@@ -67,15 +69,29 @@ export default function App() {
             )}
           />
         ) : (
-          
+
           <Stack.Screen name="Main">
             {({ navigation, route }) => (
               <MainStack {...{ navigation, route }} role={role} setAuth={setAuthStatus} />
             )}
           </Stack.Screen>
         )}
-        <Stack.Screen name="Notifications" component={Notifications} />
-        <Stack.Screen name="NotificationDetail" component={NotificationDetail} />
+        <Stack.Screen
+          name="Notifications"
+          component={Notifications}
+        />
+        <Stack.Screen
+          name="NotificationDetail"
+          component={NotificationDetail}
+        />
+        <Stack.Screen
+          name='EditProfile'
+          component={EditProfileScreen}
+        />
+        <Stack.Screen
+          name='CategoryDetails'
+          component={CategoryDetails}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
