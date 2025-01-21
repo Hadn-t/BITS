@@ -11,6 +11,7 @@ import Notifications from "./screens/Notification";
 import { auth } from "./firebaseConfig";
 import EditProfileScreen from "./screens/EditProfileScreen";
 import CategoryDetails from "./screens/CategoryDetails";
+import Reference from "./screens/Reference";
 
 const Stack = createNativeStackNavigator();
 
@@ -91,6 +92,10 @@ export default function App() {
         <Stack.Screen
           name='CategoryDetails'
           component={CategoryDetails}
+        />
+        <Stack.Screen
+        name='Refer'
+        component={Reference}
         />
       </Stack.Navigator>
     </NavigationContainer>
