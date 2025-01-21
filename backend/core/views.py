@@ -9,21 +9,21 @@ from .models import FileUpload
 from .serializers import FileUploadSerializer
 
 
-from .helpers import create_document_reference
+# from .helpers import create_document_reference
 
-def get_document_reference(request, file_id):
-    try:
-        # Retrieve the file upload object
-        file_upload = FileUpload.objects.get(id=file_id)
+# def get_document_reference(request, file_id):
+#     try:
+#         # Retrieve the file upload object
+#         file_upload = FileUpload.objects.get(id=file_id)
 
-        # Create the FHIR DocumentReference resource
-        document_reference = create_document_reference(file_upload)
+#         # Create the FHIR DocumentReference resource
+#         document_reference = create_document_reference(file_upload)
 
-        # Return the document reference as JSON
-        return JsonResponse(document_reference, safe=False)
+#         # Return the document reference as JSON
+#         return JsonResponse(document_reference, safe=False)
 
-    except FileUpload.DoesNotExist:
-        return JsonResponse({"error": "File not found"}, status=404)
+#     except FileUpload.DoesNotExist:
+#         return JsonResponse({"error": "File not found"}, status=404)
     
 
 

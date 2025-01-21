@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
+  SafeAreaView,
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
@@ -19,13 +20,13 @@ const DOCUMENT_TYPES = {
 };
 
 const HealthRecordsScreen = () => {
+  // Keeping all state and functions unchanged
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState(null);
   const [name, setName] = useState("");
-  const [fileList, setFileList] = useState([]); // State to store the file list
+  const [fileList, setFileList] = useState([]);
 
-  // Function to pick a document
   const pickDocument = async (documentType) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -79,7 +80,7 @@ const HealthRecordsScreen = () => {
 
       const csrfToken = "YOUR_CSRF_TOKEN"; // Replace with your actual CSRF token if needed
 
-      const response = await fetch("http://192.168.29.157:5000/core/upload/", {
+      const response = await fetch("http://192.168.1.2:8000/core/upload/", {
         method: "POST",
         body: formData,
         headers: {
@@ -119,7 +120,7 @@ const HealthRecordsScreen = () => {
 
     try {
       const response = await fetch(
-        `http://192.168.29.157:5000/core/user/${userId}/files/`
+        `http://192.168.1.2:8000/core/user/${userId}/files/`
       );
       if (!response.ok) {
         throw new Error(`Failed to fetch files: ${response.status}`);
@@ -129,7 +130,7 @@ const HealthRecordsScreen = () => {
       // Add the base URL to the file paths
       const filesWithFullUrls = data.files.map((file) => ({
         ...file,
-        file_url: `http://192.168.29.157:5000${file.file}`,
+        file_url: `http://192.168.1.2:8000${file.file}`,
       }));
 
       setFileList(filesWithFullUrls || []);
@@ -165,201 +166,284 @@ const HealthRecordsScreen = () => {
       Alert.alert("Error", `Failed to download file: ${error.message}`);
     }
   };
-
-  // Fetch files when component is mounted
   useEffect(() => {
     fetchFiles();
   }, []);
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Upload and View Files</Text>
+  const getFileIcon = (fileName) => {
+    const ext = fileName.split('.').pop().toLowerCase();
+    if (['pdf'].includes(ext)) return "📄";
+    if (['jpg', 'jpeg', 'png'].includes(ext)) return "🖼️";
+    if (['doc', 'docx'].includes(ext)) return "📝";
+    return "📎";
+  };
 
-      <View style={styles.mainContent}>
-        <View style={styles.buttonContainer}>
-          {Object.entries(DOCUMENT_TYPES).map(([key, value]) => (
-            <TouchableOpacity
-              key={key}
-              style={[
-                styles.button,
-                styles.typeButton,
-                selectedDocType === key && styles.selectedButton,
-              ]}
-              onPress={() => pickDocument(key)}
-            >
-              <Text style={styles.buttonText}>{value}</Text>
-            </TouchableOpacity>
-          ))}
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Health Records</Text>
+          <Text style={styles.headerSubtitle}>Manage your medical documents</Text>
         </View>
 
-        {selectedFile && (
-          <View style={styles.fileInfo}>
-            <TextInput
-              placeholder="Enter the File Name"
-              style={styles.fileNameInput}
-              value={name}
-              onChangeText={setName}
-            />
-            <View style={styles.fileDetailsContainer}>
-              <Text style={styles.fileType}>
-                Type: {DOCUMENT_TYPES[selectedDocType]}
-              </Text>
-              <Text style={styles.fileName} numberOfLines={1}>
-                File: {selectedFile.name}
-              </Text>
-              <Text style={styles.fileDetails}>
-                Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-              </Text>
+        <View style={styles.content}>
+          <View style={styles.uploadSection}>
+            <Text style={styles.sectionTitle}>Upload New Document</Text>
+            <View style={styles.buttonContainer}>
+              {Object.entries(DOCUMENT_TYPES).map(([key, value]) => (
+                <TouchableOpacity
+                  key={key}
+                  style={[
+                    styles.docTypeButton,
+                    selectedDocType === key && styles.selectedDocTypeButton,
+                  ]}
+                  onPress={() => pickDocument(key)}
+                >
+                  <Text 
+                    style={[
+                      styles.docTypeButtonText,
+                      selectedDocType === key && styles.selectedDocTypeButtonText
+                    ]}
+                  >
+                    {value}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
+
+            {selectedFile && (
+              <View style={styles.selectedFileCard}>
+                <TextInput
+                  placeholder="Enter document name..."
+                  placeholderTextColor="#94A3B8"
+                  style={styles.fileNameInput}
+                  value={name}
+                  onChangeText={setName}
+                />
+                <View style={styles.fileDetails}>
+                  <Text style={styles.fileDetailText}>
+                    Type: {DOCUMENT_TYPES[selectedDocType]}
+                  </Text>
+                  <Text style={styles.fileDetailText} numberOfLines={1}>
+                    File: {selectedFile.name}
+                  </Text>
+                  <Text style={styles.fileDetailText}>
+                    Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </Text>
+                </View>
+                {isLoading ? (
+                  <ActivityIndicator style={styles.loader} color="#3B82F6" size="large" />
+                ) : (
+                  <TouchableOpacity style={styles.uploadButton} onPress={uploadFile}>
+                    <Text style={styles.uploadButtonText}>Upload Document</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </View>
-        )}
 
-        {selectedFile &&
-          (isLoading ? (
-            <ActivityIndicator
-              style={styles.loader}
-              color="#2196F3"
-              size="large"
+          <View style={styles.filesSection}>
+            <Text style={styles.sectionTitle}>Your Documents</Text>
+            <FlatList
+              data={fileList}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.fileItem}
+                  onPress={() => {
+                    if (item.file_url) {
+                      downloadFile(item.file_url, item.file_name);
+                    } else {
+                      Alert.alert("Error", "Invalid file URL.");
+                    }
+                  }}
+                >
+                  <View style={styles.fileItemContent}>
+                    <Text style={styles.fileIcon}>{getFileIcon(item.file_name)}</Text>
+                    <View style={styles.fileItemDetails}>
+                      <Text style={styles.fileName}>{item.file_name}</Text>
+                      <Text style={styles.fileCategory}>{item.category}</Text>
+                    </View>
+                    <Text style={styles.downloadIcon}>Download</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>No documents uploaded yet</Text>
+                  <Text style={styles.emptyStateSubtext}>Your uploaded documents will appear here</Text>
+                </View>
+              }
             />
-          ) : (
-            <TouchableOpacity
-              style={[styles.button, styles.uploadButton]}
-              onPress={uploadFile}
-            >
-              <Text style={styles.buttonText}>Upload</Text>
-            </TouchableOpacity>
-          ))}
-
-        {/* File List */}
-        <Text style={styles.sectionHeader}>Uploaded Files</Text>
-        <FlatList
-          data={fileList}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => {
-            console.log("File URL:", item.file_url);
-            return (
-              <TouchableOpacity
-                style={styles.fileItem}
-                onPress={() => {
-                  if (item.file_url) {
-                    downloadFile(item.file_url, item.file_name);
-                  } else {
-                    Alert.alert("Error", "Invalid file URL.");
-                  }
-                }}
-              >
-                <Text style={styles.fileItemText}>{item.file_name}</Text>
-              </TouchableOpacity>
-            );
-          }}
-        />
+          </View>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: "#fff",
   },
   header: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 25,
-    color: "#333",
+    padding: 20,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
   },
-  mainContent: {
-    gap: 20,
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1E293B",
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#64748B",
+    marginTop: 4,
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  uploadSection: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1E293B",
+    marginBottom: 16,
   },
   buttonContainer: {
     flexDirection: "row",
-    gap: 15,
-    marginBottom: 20,
+    gap: 12,
   },
-  button: {
-    padding: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  typeButton: {
+  docTypeButton: {
     flex: 1,
-    backgroundColor: "#2196F3",
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
   },
-  selectedButton: {
-    backgroundColor: "#1976D2",
+  selectedDocTypeButton: {
+    backgroundColor: "#4A8B94",
   },
-  uploadButton: {
-    backgroundColor: "#4CAF50",
-    marginTop: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
+  docTypeButtonText: {
+    fontSize: 15,
     fontWeight: "600",
+    color: "#64748B",
   },
-  fileInfo: {
-    backgroundColor: "#f5f5f5",
-    padding: 15,
-    borderRadius: 8,
-    marginVertical: 10,
+  selectedDocTypeButtonText: {
+    color: "#FFFFFF",
+  },
+  selectedFileCard: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
   fileNameInput: {
-    width: "100%",
-    borderRadius: 12,
-    height: 60,
-    borderColor: "teal",
-    borderWidth: 2,
-    paddingHorizontal: 10,
-    backgroundColor: "#fff",
-  },
-  fileDetailsContainer: {
-    paddingLeft: 12,
-    marginTop: 12,
-  },
-  fileType: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 5,
-    color: "#444",
-  },
-  fileName: {
-    color: "#666",
-    fontSize: 16,
-    marginBottom: 5,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    color: "#1E293B",
   },
   fileDetails: {
-    color: "#666",
-    fontSize: 16,
-    marginBottom: 5,
+    marginTop: 12,
+    gap: 4,
   },
-  loader: {
-    marginVertical: 20,
+  fileDetailText: {
+    fontSize: 14,
+    color: "#4A8B94",
   },
-  sectionHeader: {
-    fontSize: 18,
+  uploadButton: {
+    backgroundColor: "#4A8B94",
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  uploadButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
     fontWeight: "600",
-    color: "#444",
-    marginVertical: 10,
+  },
+  filesSection: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   fileItem: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    marginBottom: 8,
   },
-  fileItemText: {
+  fileItemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+  },
+  fileIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  fileItemDetails: {
+    flex: 1,
+  },
+  fileName: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#1E293B",
+  },
+  fileCategory: {
+    fontSize: 13,
+    color: "#64748B",
+    marginTop: 2,
+  },
+  downloadIcon: {
+    fontSize: 10,
+    color: "#4A8B94",
+  },
+  emptyState: {
+    alignItems: "center",
+    padding: 24,
+  },
+  emptyStateText: {
     fontSize: 16,
-    color: "#2196F3",
+    fontWeight: "500",
+    color: "#1E293B",
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: "#64748B",
+    marginTop: 4,
+  },
+  loader: {
+    marginVertical: 16,
   },
 });
 
