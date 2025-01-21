@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,9 +7,11 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   TextInput,
+  FlatList,
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
-import { auth } from '../firebaseConfig';
+import * as FileSystem from "expo-file-system";
+import { auth } from "../firebaseConfig";
 
 const DOCUMENT_TYPES = {
   prescription: "Prescription",
@@ -20,8 +22,10 @@ const HealthRecordsScreen = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState(null);
-  const [name, setName] = useState('');
+  const [name, setName] = useState("");
+  const [fileList, setFileList] = useState([]); // State to store the file list
 
+  // Function to pick a document
   const pickDocument = async (documentType) => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -42,6 +46,7 @@ const HealthRecordsScreen = () => {
     }
   };
 
+  // Function to upload the selected file
   const uploadFile = async () => {
     if (!selectedFile) {
       Alert.alert("Error", "Please select a file first.");
@@ -62,17 +67,17 @@ const HealthRecordsScreen = () => {
       const formData = new FormData();
 
       const fileToUpload = {
-        uri: selectedFile.uri,
+        uri: decodeURI(selectedFile.uri),
         type: selectedFile.mimeType || "application/octet-stream",
         name: name.trim() || selectedFile.name,
       };
 
       formData.append("file", fileToUpload);
-      formData.append("user_id", userId);
+      formData.append("user_id", userId); // Use dynamic user ID here
       formData.append("category", selectedDocType);
       formData.append("name", name);
 
-      const csrfToken = "YOUR_CSRF_TOKEN";
+      const csrfToken = "YOUR_CSRF_TOKEN"; // Replace with your actual CSRF token if needed
 
       const response = await fetch("http://192.168.29.157:5000/core/upload/", {
         method: "POST",
@@ -88,16 +93,15 @@ const HealthRecordsScreen = () => {
       }
 
       const responseText = await response.text();
-      console.log("Upload successful for user:", userId);
       Alert.alert("Success", "File uploaded successfully!");
       setSelectedFile(null);
       setSelectedDocType(null);
-      setName('');
+      setName("");
+      fetchFiles();
     } catch (error) {
       console.error("Full error details:", {
         message: error.message,
         stack: error.stack,
-        userId: auth.currentUser?.uid
       });
       Alert.alert("Error", `Upload failed: ${error.message}`);
     } finally {
@@ -105,9 +109,71 @@ const HealthRecordsScreen = () => {
     }
   };
 
+  // Function to fetch the list of uploaded files
+  const fetchFiles = async () => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) {
+      Alert.alert("Error", "Please login first.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://192.168.29.157:5000/core/user/${userId}/files/`
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to fetch files: ${response.status}`);
+      }
+      const data = await response.json();
+
+      // Add the base URL to the file paths
+      const filesWithFullUrls = data.files.map((file) => ({
+        ...file,
+        file_url: `http://192.168.29.157:5000${file.file}`,
+      }));
+
+      setFileList(filesWithFullUrls || []);
+    } catch (error) {
+      console.error("Error fetching files:", error);
+      Alert.alert("Error", `Failed to fetch files: ${error.message}`);
+    }
+  };
+
+  // Function to download the file
+  const downloadFile = async (fileUrl, fileName) => {
+    if (!fileUrl || !fileName) {
+      Alert.alert("Error", "Invalid file URL or file name.");
+      console.log("Error", "Invalid file URL or file name.");
+      return;
+    }
+
+    try {
+      // Construct the URI where the file will be saved
+      const uri = `${FileSystem.documentDirectory}${fileName}`;
+      console.log("Downloading file to:", uri); // Log the target URI
+
+      // Download the file
+      const { uri: downloadedUri } = await FileSystem.downloadAsync(
+        fileUrl,
+        uri
+      );
+
+      // Notify the user about successful download
+      Alert.alert("Success", `File downloaded to ${downloadedUri}`);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      Alert.alert("Error", `Failed to download file: ${error.message}`);
+    }
+  };
+
+  // Fetch files when component is mounted
+  useEffect(() => {
+    fetchFiles();
+  }, []);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Upload Files</Text>
+      <Text style={styles.header}>Upload and View Files</Text>
 
       <View style={styles.mainContent}>
         <View style={styles.buttonContainer}>
@@ -138,7 +204,6 @@ const HealthRecordsScreen = () => {
               <Text style={styles.fileType}>
                 Type: {DOCUMENT_TYPES[selectedDocType]}
               </Text>
-
               <Text style={styles.fileName} numberOfLines={1}>
                 File: {selectedFile.name}
               </Text>
@@ -164,6 +229,30 @@ const HealthRecordsScreen = () => {
               <Text style={styles.buttonText}>Upload</Text>
             </TouchableOpacity>
           ))}
+
+        {/* File List */}
+        <Text style={styles.sectionHeader}>Uploaded Files</Text>
+        <FlatList
+          data={fileList}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => {
+            console.log("File URL:", item.file_url);
+            return (
+              <TouchableOpacity
+                style={styles.fileItem}
+                onPress={() => {
+                  if (item.file_url) {
+                    downloadFile(item.file_url, item.file_name);
+                  } else {
+                    Alert.alert("Error", "Invalid file URL.");
+                  }
+                }}
+              >
+                <Text style={styles.fileItemText}>{item.file_name}</Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
       </View>
     </View>
   );
@@ -256,6 +345,21 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginVertical: 20,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#444",
+    marginVertical: 10,
+  },
+  fileItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  fileItemText: {
+    fontSize: 16,
+    color: "#2196F3",
   },
 });
 
