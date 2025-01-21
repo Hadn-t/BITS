@@ -28,7 +28,9 @@ import {
   faChevronLeft,
   faStar,
   faCertificate,
-  faHeartbeat
+  faHeartbeat,
+  faTextHeight,
+  faWeight
 } from "@fortawesome/free-solid-svg-icons";
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../firebaseConfig';
@@ -159,7 +161,7 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
     >
       <ProfileHeader
         name={userData?.firstname || 'Dr. John Doe'}
-        role="Cardiologist"
+        role={userData?.specialization||"Cardiologist"}
         imageUrl="https://example.com/doctor_profile.jpg"
         verified={true}
       />
@@ -167,7 +169,7 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
       <View style={styles.contentContainer}>
         <View style={styles.statsContainer}>
           <StatCard icon={faUserMd} value="150+" label="Patients" />
-          <StatCard icon={faClock} value="10+" label="Years Exp." />
+          <StatCard icon={faClock} value={userData?.experience||"1+" }label="Years Exp." />
           <StatCard icon={faStar} value="4.9" label="Rating" />
         </View>
 
@@ -180,11 +182,11 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
             </View>
             <View style={styles.contactItem}>
               <FontAwesomeIcon icon={faPhone} size={20} color="#007BFF" />
-              <Text style={styles.contactText}>+1234567890</Text>
+              <Text style={styles.contactText}>{userData?.phone||'+91 123456789'}</Text>
             </View>
             <View style={styles.contactItem}>
               <FontAwesomeIcon icon={faHospital} size={20} color="#007BFF" />
-              <Text style={styles.contactText}>Central Hospital</Text>
+              <Text style={styles.contactText}>{userData?.hospital||'Central Hospital'}</Text>
             </View>
           </View>
         </Animatable.View>
@@ -269,24 +271,24 @@ const ProfileScreen = ({ route, setAuth, navigation }) => {
               <View style={styles.healthItem}>
                 <FontAwesomeIcon icon={faHeartbeat} size={20} color="#007BFF" />
                 <Text style={styles.healthLabel}>Blood Type</Text>
-                <Text style={styles.healthValue}>A+</Text>
+                <Text style={styles.healthValue}>{userData?.bloodType||'Not Submitted'}</Text>
               </View>
               <View style={styles.healthItem}>
                 <FontAwesomeIcon icon={faUserCircle} size={20} color="#007BFF" />
                 <Text style={styles.healthLabel}>Age</Text>
-                <Text style={styles.healthValue}>35</Text>
+                <Text style={styles.healthValue}>{userData?.age||'Not Submitted'}</Text>
               </View>
             </View>
             <View style={styles.healthRow}>
               <View style={styles.healthItem}>
-                <FontAwesomeIcon icon={faStethoscope} size={20} color="#007BFF" />
+                <FontAwesomeIcon icon={faWeight} size={20} color="#007BFF" />
                 <Text style={styles.healthLabel}>Weight</Text>
-                <Text style={styles.healthValue}>75 kg</Text>
+                <Text style={styles.healthValue}>{userData?.weight||'Not Submitted'}</Text>
               </View>
               <View style={styles.healthItem}>
-                <FontAwesomeIcon icon={faStethoscope} size={20} color="#007BFF" />
+                <FontAwesomeIcon icon={faTextHeight} size={20} color="#007BFF" />
                 <Text style={styles.healthLabel}>Height</Text>
-                <Text style={styles.healthValue}>175 cm</Text>
+                <Text style={styles.healthValue}>{userData?.height||'Not Submitted'}</Text>
               </View>
             </View>
           </View>

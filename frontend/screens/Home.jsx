@@ -118,11 +118,11 @@ const HomeScreen = ({ navigation }) => {
     setSearchQuery(text);
     // Implement search functionality here
   };
-
-  const handleCategoryPress = (category) => {
-    navigation.navigate('CategoryDetails', { category });
-  };
-
+// In Home.jsx
+const handleCategoryPress = (category) => {
+  console.log('Selected category:', category); // Add this debug log
+  navigation.navigate('CategoryDetails', { category });
+};
   const handleMedicalCenterPress = (center) => {
     navigation.navigate('Nearby Hospitals', { center });
   };
@@ -208,7 +208,7 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.categoriesSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Categories</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Categories')}>
+            <TouchableOpacity onPress={() => navigation.navigate('CategoryDetails', { category: 'All' })}>
               <Text style={styles.seeAllButton}>See All</Text>
             </TouchableOpacity>
           </View>
