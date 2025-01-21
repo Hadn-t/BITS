@@ -92,9 +92,9 @@ const Appointment = ({ navigation }) => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) return '#6B7280'; // Past
-    if (diffDays === 0) return '#10B981'; // Today
+    if (diffDays === 0) return '#4A8B94'; // Today - updated to match theme
     if (diffDays <= 3) return '#F59E0B'; // Upcoming
-    return '#3B82F6'; // Scheduled
+    return '#4A8B94'; // Scheduled - updated to match theme
   };
 
   const renderAppointmentItem = ({ item }) => (
@@ -103,7 +103,7 @@ const Appointment = ({ navigation }) => {
         <View>
           <Text style={styles.appointmentDate}>{item.date}</Text>
           <View style={styles.timeContainer}>
-            <MaterialIcons name="access-time" size={16} color="#3B82F6" />
+            <MaterialIcons name="access-time" size={16} color="#4A8B94" />
             <Text style={styles.appointmentTime}>{item.time}</Text>
           </View>
         </View>
@@ -127,7 +127,7 @@ const Appointment = ({ navigation }) => {
           }}
           style={styles.actionButton}
         >
-          <MaterialIcons name="edit" size={22} color="#3B82F6" />
+          <MaterialIcons name="edit" size={22} color="#4A8B94" />
         </TouchableOpacity>
         <TouchableOpacity 
           onPress={() => {
@@ -156,12 +156,12 @@ const Appointment = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Appointment Manager</Text>
           <TouchableOpacity style={styles.profileButton}>
-            <MaterialIcons name="person" size={24} color="#3B82F6" />
+            <MaterialIcons name="person" size={24} color="#4A8B94" />
           </TouchableOpacity>
         </View>
 
@@ -174,7 +174,7 @@ const Appointment = ({ navigation }) => {
             style={styles.dateTimeButton}
             onPress={() => setShowDatePicker(true)}
           >
-            <MaterialIcons name="calendar-today" size={20} color="#3B82F6" />
+            <MaterialIcons name="calendar-today" size={20} color="#4A8B94" />
             <Text style={styles.dateTimeText}>{date.toDateString()}</Text>
           </TouchableOpacity>
 
@@ -192,7 +192,7 @@ const Appointment = ({ navigation }) => {
             style={styles.dateTimeButton}
             onPress={() => setShowTimePicker(true)}
           >
-            <MaterialIcons name="access-time" size={20} color="#3B82F6" />
+            <MaterialIcons name="access-time" size={20} color="#4A8B94" />
             <Text style={styles.dateTimeText}>
               {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
@@ -262,9 +262,12 @@ const Appointment = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
   },
   header: {
     flexDirection: 'row',
@@ -278,18 +281,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#333',
   },
   profileButton: {
     padding: 8,
-    backgroundColor: '#EBF5FF',
+    backgroundColor: '#F0F0F0',
     borderRadius: 20,
   },
   inputSection: {
     backgroundColor: '#FFFFFF',
     margin: 16,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -299,7 +302,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#333',
     marginBottom: 16,
   },
   dateTimeButton: {
@@ -307,29 +310,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     marginBottom: 16,
+    backgroundColor: '#F5F5F5',
   },
   dateTimeText: {
     marginLeft: 8,
     fontSize: 16,
-    color: '#1F2937',
+    color: '#333',
   },
   descriptionInput: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     fontSize: 16,
     minHeight: 100,
     textAlignVertical: 'top',
     marginBottom: 16,
-    color: '#1F2937',
+    color: '#333',
+    backgroundColor: '#F5F5F5',
   },
   saveButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 8,
+    backgroundColor: '#4A8B94',
+    borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
@@ -345,18 +350,18 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   searchInput: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     marginBottom: 16,
     fontSize: 16,
-    color: '#1F2937',
+    color: '#333',
   },
   appointmentItem: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -374,7 +379,7 @@ const styles = StyleSheet.create({
   appointmentDate: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#333',
     marginBottom: 4,
   },
   timeContainer: {
@@ -384,7 +389,7 @@ const styles = StyleSheet.create({
   appointmentTime: {
     marginLeft: 4,
     fontSize: 14,
-    color: '#3B82F6',
+    color: '#4A8B94',
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -397,7 +402,7 @@ const styles = StyleSheet.create({
   },
   appointmentDescription: {
     fontSize: 15,
-    color: '#4B5563',
+    color: '#666',
     marginBottom: 12,
   },
   appointmentActions: {
