@@ -87,17 +87,45 @@ const SignUp = ({ role, setAuth, setRole, navigation, setMode }) => {
             const userCredential = await createUserWithEmailAndPassword(auth, username, password);
             const user = userCredential.user;
 
+            // Create a reference to the user document
             const userRef = doc(db, 'users', user.uid);
 
-            // Store user data in Firestore
-            await setDoc(userRef, {
+            // Prepare user data including uid
+            const userData = {
+                uid: user.uid, // Adding UID to the user data
                 username: username,
-                firstname: firstName, // Changed to match the field name used in SignIn
+                firstname: firstName,
                 lastname: lastName,
                 email: user.email,
                 role: role,
                 createdAt: new Date().toISOString(),
-            });
+                updatedAt: new Date().toISOString(),
+                isActive: true,
+                emailVerified: user.emailVerified,
+                // Add any additional fields you want to store
+            };
+
+            // Store user data in Firestore
+            await setDoc(userRef, userData);
+
+            // If the user is a doctor or patient, create a separate record in respective collection
+            if (role === 'doctor' || role === 'patient') {
+                const roleRef = doc(db, `${role}s`, user.uid);
+                await setDoc(roleRef, {
+                    ...userData,
+                    // Add role-specific fields here
+                    profile: {
+                        address: '',
+                        phone: '',
+                        gender: '',
+                        dateOfBirth: '',
+                        bloodGroup: '',
+                        height: '',
+                        weight: '',
+                        // Add more profile fields as needed
+                    }
+                });
+            }
 
             setAuth(true);
             setRole(role);

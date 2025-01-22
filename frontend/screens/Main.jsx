@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-native-fontawesome";
 import { faHome, faHospital, faFileAlt, faCalendar, faUsers, faCommentDots, faDashboard, faUser } from "@fortawesome/free-solid-svg-icons";
 
 import DashboardScreen from "./Dashboard";
+import ClientAppointmentScreen from "./ClientAppointment";
 import AppointmentScreen from "./Appointment";
 import PatientsScreen from "./Patients";
 import MessagesScreen from "./Messages";
@@ -50,33 +51,23 @@ const MainStack = ({ navigation, role, setAuth }) => {
             }}
           />
           <Tab.Screen
-            name="Health Records"
-            component={HealthRecordsScreen}
-            options={{
-              tabBarIcon: ({ focused, color, size }) => (
-                <FontAwesomeIcon icon={faFileAlt} size={size} color={color} />
-              ),
-              headerShown: false
-            }}
-          />
-          <Tab.Screen
-            name="Appointments"
-            component={AppointmentScreen}
+            name="ClientAppointments"
+            component={ClientAppointmentScreen}
             options={{
               tabBarIcon: ({ focused, color, size }) => (
                 <FontAwesomeIcon icon={faCalendar} size={size} color={color} />
               ),
             }}
           />
-            <Tab.Screen
-              name="Messages"
-              component={MessagesScreen}
-              options={{
-                tabBarIcon: ({ focused, color, size }) => (
-                  <FontAwesomeIcon icon={faCommentDots} size={size} color={color} />
-                ),
-              }}
-            />
+          <Tab.Screen
+            name="Messages"
+            component={MessagesScreen}
+            options={{
+              tabBarIcon: ({ focused, color, size }) => (
+                <FontAwesomeIcon icon={faCommentDots} size={size} color={color} />
+              ),
+            }}
+          />
         </>
       ) : role === 'doctor' ? (
         <>
