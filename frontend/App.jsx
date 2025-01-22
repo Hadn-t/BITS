@@ -1,3 +1,5 @@
+//App.jsx
+
 import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -9,8 +11,8 @@ import Authentication from "./screens/Authentication";
 import NotificationDetail from "./screens/NotificationDetail";
 import Notifications from "./screens/Notification";
 import { auth } from "./firebaseConfig";
-import EditProfileScreen from "./screens/EditProfileScreen";
 import CategoryDetails from "./screens/CategoryDetails";
+import EditProfileScreen from "./screens/editProfileScreen";
 import Reference from "./screens/Reference";
 
 const Stack = createNativeStackNavigator();
