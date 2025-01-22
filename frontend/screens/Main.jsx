@@ -51,6 +51,16 @@ const MainStack = ({ navigation, role, setAuth }) => {
             }}
           />
           <Tab.Screen
+            name="Health Records"
+            component={HealthRecordsScreen}
+            options={{
+              tabBarIcon: ({ focused, color, size }) => (
+                <FontAwesomeIcon icon={faFileAlt} size={size} color={color} />
+              ),
+              headerShown: false
+            }}
+          />
+          <Tab.Screen
             name="ClientAppointments"
             component={ClientAppointmentScreen}
             options={{
@@ -59,15 +69,15 @@ const MainStack = ({ navigation, role, setAuth }) => {
               ),
             }}
           />
-          <Tab.Screen
-            name="Messages"
-            component={MessagesScreen}
-            options={{
-              tabBarIcon: ({ focused, color, size }) => (
-                <FontAwesomeIcon icon={faCommentDots} size={size} color={color} />
-              ),
-            }}
-          />
+            <Tab.Screen
+              name="Messages"
+              component={MessagesScreen}
+              options={{
+                tabBarIcon: ({ focused, color, size }) => (
+                  <FontAwesomeIcon icon={faCommentDots} size={size} color={color} />
+                ),
+              }}
+            />
         </>
       ) : role === 'doctor' ? (
         <>
