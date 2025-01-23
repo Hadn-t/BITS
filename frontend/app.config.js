@@ -1,6 +1,5 @@
-// app.config.js
 import * as dotenv from 'dotenv';
-dotenv.config();  
+dotenv.config();
 
 export default {
   expo: {
@@ -16,6 +15,7 @@ export default {
       supportsTablet: true,
     },
     android: {
+      package: "com.hadnt.healthylife", 
       adaptiveIcon: {
         foregroundImage: "./assets/images/adaptive-icon.png",
         backgroundColor: "#ffffff",
@@ -52,6 +52,9 @@ export default {
       firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET,
       firebaseMessagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
       firebaseAppId: process.env.FIREBASE_APP_ID,
+      eas: {
+        projectId: "2e6ed08e-f496-4924-9472-86a6a01ced74",
+      },
     },
   },
 };
